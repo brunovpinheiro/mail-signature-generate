@@ -7,7 +7,6 @@ import { BulkGenerator } from "@/components/BulkGenerator";
 import { useSignatureEditor } from "@/hooks/useSignatureEditor";
 import { useExport } from "@/hooks/useExport";
 import { Toaster, toast } from "sonner";
-import { Sparkles } from "lucide-react";
 
 function App() {
 	const { signatureData, setSignatureData, generatedHtml, isValid } = useSignatureEditor();
