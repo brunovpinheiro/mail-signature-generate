@@ -23,4 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Environment variables and sensitive data
 .env*.local
+.env
+config/approvers.json
