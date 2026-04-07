@@ -12,6 +12,7 @@ interface UseSignatureEditorReturn {
 const DEFAULT_DATA: SignatureData = {
   name: '',
   jobTitle: '',
+  website: 'https://taclashopping.com.br',
 }
 
 export function useSignatureEditor(): UseSignatureEditorReturn {
