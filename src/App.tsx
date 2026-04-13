@@ -19,8 +19,6 @@ import { useExport } from '@/hooks/useExport'
 import { submitRequest } from '@/lib/api'
 import { Toaster, toast } from 'sonner'
 import { CheckCircle2, Mail } from 'lucide-react'
-import { getCompanyByDomain } from '@/lib/company-domains'
-
 // ── Tela de confirmação pós-envio ─────────────────────────────────────────────
 function SubmittedState({ onReset }: { onReset: () => void }) {
   return (
@@ -145,17 +143,13 @@ function AdminApp() {
   const [token, setToken] = useState<string | null>(
     () => sessionStorage.getItem('admin_token')
   )
-  const [companyName, setCompanyName] = useState('')
-
-  function handleLogin(newToken: string, domain: string) {
+  function handleLogin(newToken: string, _domain: string) {
     setToken(newToken)
-    setCompanyName(getCompanyByDomain(domain)?.name ?? domain)
   }
 
   function handleLogout() {
     sessionStorage.removeItem('admin_token')
     setToken(null)
-    setCompanyName('')
   }
 
   if (!token) return <AdminLogin onLogin={handleLogin} />
