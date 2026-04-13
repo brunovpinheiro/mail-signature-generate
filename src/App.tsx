@@ -10,12 +10,16 @@ import { BulkGenerator } from '@/components/BulkGenerator'
 import { RequesterForm } from '@/components/RequesterForm'
 import { ApprovalPage } from '@/components/ApprovalPage'
 import { DownloadPage } from '@/components/DownloadPage'
+import { AdminLogin } from '@/components/AdminLogin'
+import { AdminDashboard } from '@/components/AdminDashboard'
+import { AdminRequestDetail } from '@/components/AdminRequestDetail'
 import { RequesterProvider, useRequester } from '@/context/RequesterContext'
 import { useSignatureEditor } from '@/hooks/useSignatureEditor'
 import { useExport } from '@/hooks/useExport'
 import { submitRequest } from '@/lib/api'
 import { Toaster, toast } from 'sonner'
 import { CheckCircle2, Mail } from 'lucide-react'
+import { getCompanyByDomain } from '@/lib/company-domains'
 
 // ── Tela de confirmação pós-envio ─────────────────────────────────────────────
 function SubmittedState({ onReset }: { onReset: () => void }) {
@@ -56,12 +60,15 @@ function SubmittedState({ onReset }: { onReset: () => void }) {
 // ── Aplicação principal (aba Individual + Em Massa) ───────────────────────────
 function MainApp() {
   const { requester } = useRequester()
-  const { signatureData, setSignatureData, generatedHtml, isValid } = useSignatureEditor()
+  const { signatureData, setSignatureData, generatedHtml, isValid } = useSignatureEditor({
+    templateId: requester?.company.templateId,
+    logoUrl: requester?.company.logoUrl,
+    defaultWebsite: requester?.company.defaultWebsite,
+  })
   const { exportConfig, setExportConfig, copyHtml } = useExport()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  // Antes de qualquer coisa: exige identificação do solicitante
   if (!requester) return <RequesterForm />
   if (submitted) return <SubmittedState onReset={() => setSubmitted(false)} />
 
@@ -92,7 +99,7 @@ function MainApp() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-[#0b2a5b] text-white">
         <div className="container mx-auto flex items-center justify-center gap-2 px-4 py-4">
-          <h1 className="text-xl font-bold">Tacla Shopping - Gerador de Assinaturas</h1>
+          <h1 className="text-xl font-bold">{requester.company.name} — Gerador de Assinaturas</h1>
         </div>
       </header>
 
@@ -133,6 +140,28 @@ function MainApp() {
   )
 }
 
+// ── Painel admin ──────────────────────────────────────────────────────────────
+function AdminApp() {
+  const [token, setToken] = useState<string | null>(
+    () => sessionStorage.getItem('admin_token')
+  )
+  const [companyName, setCompanyName] = useState('')
+
+  function handleLogin(newToken: string, domain: string) {
+    setToken(newToken)
+    setCompanyName(getCompanyByDomain(domain)?.name ?? domain)
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem('admin_token')
+    setToken(null)
+    setCompanyName('')
+  }
+
+  if (!token) return <AdminLogin onLogin={handleLogin} />
+  return <AdminDashboard token={token} onLogout={handleLogout} />
+}
+
 // ── Raiz com roteamento ───────────────────────────────────────────────────────
 function App() {
   return (
@@ -141,6 +170,8 @@ function App() {
         <Routes>
           <Route path="/approve/:token" element={<ApprovalPage />} />
           <Route path="/download/:requestId" element={<DownloadPage />} />
+          <Route path="/admin" element={<AdminApp />} />
+          <Route path="/admin/requests/:id" element={<AdminRequestDetail />} />
           <Route path="/*" element={<MainApp />} />
         </Routes>
       </RequesterProvider>

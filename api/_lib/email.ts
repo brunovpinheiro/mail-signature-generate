@@ -69,6 +69,7 @@ export async function sendManagerApprovalEmail(opts: {
   managerEmail: string
   requesterName: string
   requesterEmail: string
+  companyName?: string
   type: RequestType
   signatureItems: SignatureItem[]
   token: string
@@ -76,6 +77,7 @@ export async function sendManagerApprovalEmail(opts: {
 }): Promise<void> {
   const approvalUrl = `${APP_URL}/approve/${opts.token}`
   const typeLabel = opts.type === 'single' ? 'Individual' : `Em Massa (${opts.signatureItems.length} assinaturas)`
+  const companyLabel = opts.companyName ?? 'Tacla Shopping'
 
   const body = `
     <h2 style="color:#0b2a5b;margin:0 0 12px;font-size:18px;">Solicitação aguardando sua aprovação</h2>
@@ -83,6 +85,7 @@ export async function sendManagerApprovalEmail(opts: {
       Uma nova solicitação de assinatura de e-mail foi enviada para sua análise.
     </p>
     <div style="background:#f8f9fa;border-radius:6px;padding:16px;margin:0 0 16px;font-size:14px;color:#444;">
+      <p style="margin:0 0 6px;"><strong style="color:#0b2a5b;">Empresa:</strong> ${companyLabel}</p>
       <p style="margin:0 0 6px;"><strong style="color:#0b2a5b;">Solicitante:</strong> ${opts.requesterName} (${opts.requesterEmail})</p>
       <p style="margin:0 0 6px;"><strong style="color:#0b2a5b;">Tipo:</strong> ${typeLabel}</p>
       <p style="margin:0;"><strong style="color:#0b2a5b;">Data:</strong> ${formatDate(opts.createdAt)}</p>
@@ -103,7 +106,7 @@ export async function sendManagerApprovalEmail(opts: {
   await resend.emails.send({
     from: FROM,
     to: opts.managerEmail,
-    subject: '[Tacla Shopping] Solicitação de assinatura aguardando aprovação',
+    subject: `[${companyLabel}] Solicitação de assinatura aguardando aprovação`,
     html: wrapEmail(body),
   })
 }
@@ -113,10 +116,12 @@ export async function sendManagerApprovalEmail(opts: {
 export async function sendRequesterConfirmationEmail(opts: {
   requesterName: string
   requesterEmail: string
+  companyName?: string
   type: RequestType
   count: number
 }): Promise<void> {
   const typeLabel = opts.type === 'single' ? 'individual' : `em massa (${opts.count} assinaturas)`
+  const companyLabel = opts.companyName ?? 'Tacla Shopping'
 
   const body = `
     <h2 style="color:#0b2a5b;margin:0 0 12px;font-size:18px;">Solicitação enviada com sucesso</h2>
@@ -124,7 +129,7 @@ export async function sendRequesterConfirmationEmail(opts: {
       Olá, <strong>${opts.requesterName}</strong>!
     </p>
     <p style="color:#444;line-height:1.6;margin:0 0 16px;">
-      Sua solicitação de assinatura ${typeLabel} foi recebida e enviada para análise dos gestores.
+      Sua solicitação de assinatura ${typeLabel} para <strong>${companyLabel}</strong> foi recebida e enviada para análise dos gestores.
     </p>
     <div style="background:#e8f0fb;border-left:4px solid #0b2a5b;border-radius:4px;padding:16px;margin:16px 0;">
       <p style="margin:0;color:#0b2a5b;font-size:14px;">
@@ -138,7 +143,7 @@ export async function sendRequesterConfirmationEmail(opts: {
   await resend.emails.send({
     from: FROM,
     to: opts.requesterEmail,
-    subject: '[Tacla Shopping] Solicitação de assinatura enviada para aprovação',
+    subject: `[${companyLabel}] Solicitação de assinatura enviada para aprovação`,
     html: wrapEmail(body),
   })
 }
@@ -150,8 +155,10 @@ export async function sendRequesterApprovedEmail(opts: {
   requesterEmail: string
   requestId: string
   decidedBy: string
+  companyName?: string
 }): Promise<void> {
   const downloadUrl = `${APP_URL}/download/${opts.requestId}`
+  const companyLabel = opts.companyName ?? 'Tacla Shopping'
 
   const body = `
     <h2 style="color:#0b2a5b;margin:0 0 12px;font-size:18px;">Sua assinatura foi aprovada!</h2>
@@ -177,7 +184,7 @@ export async function sendRequesterApprovedEmail(opts: {
   await resend.emails.send({
     from: FROM,
     to: opts.requesterEmail,
-    subject: '[Tacla Shopping] Sua assinatura foi aprovada ✓',
+    subject: `[${companyLabel}] Sua assinatura foi aprovada ✓`,
     html: wrapEmail(body),
   })
 }
@@ -188,7 +195,10 @@ export async function sendRequesterRejectedEmail(opts: {
   requesterName: string
   requesterEmail: string
   reason: string
+  companyName?: string
 }): Promise<void> {
+  const companyLabelRej = opts.companyName ?? 'Tacla Shopping'
+
   const body = `
     <h2 style="color:#0b2a5b;margin:0 0 12px;font-size:18px;">Solicitação reprovada</h2>
     <p style="color:#444;line-height:1.6;margin:0 0 16px;">
@@ -214,7 +224,7 @@ export async function sendRequesterRejectedEmail(opts: {
   await resend.emails.send({
     from: FROM,
     to: opts.requesterEmail,
-    subject: '[Tacla Shopping] Solicitação de assinatura reprovada',
+    subject: `[${companyLabelRej}] Solicitação de assinatura reprovada`,
     html: wrapEmail(body),
   })
 }

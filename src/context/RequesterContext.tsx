@@ -1,8 +1,10 @@
 import { createContext, useContext, useState } from 'react'
+import type { CompanyConfig } from '@/lib/company-domains'
 
 export interface RequesterInfo {
   name: string
   email: string
+  company: CompanyConfig
 }
 
 interface RequesterContextValue {

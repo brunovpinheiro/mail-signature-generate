@@ -1,11 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { supabase } from './_lib/supabase.js'
 import { generateToken, hashSignatureItems } from './_lib/crypto.js'
-import { getApprovers } from './_lib/approvers.js'
+import { getApproversForRequester } from './_lib/approvers.js'
 import {
   sendManagerApprovalEmail,
   sendRequesterConfirmationEmail,
 } from './_lib/email.js'
+import { getCompanyNameByEmail } from './_lib/company-domains.js'
 import type { SignatureItem, RequestType } from './_lib/types.js'
 
 function isValidEmail(email: string): boolean {
@@ -44,13 +45,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const approvers = getApprovers()
+    const normalizedEmail = requesterEmail.trim().toLowerCase()
+    const companyName = getCompanyNameByEmail(normalizedEmail)
+
+    // ── Busca aprovadores da empresa do solicitante ─────────────────────────
+    const approvers = getApproversForRequester(normalizedEmail)
     if (approvers.length === 0) {
-      console.error('[requests] No approvers configured')
-      return res.status(500).json({ error: 'Nenhum gestor aprovador configurado.' })
+      console.error('[requests] No approvers configured for domain:', normalizedEmail.split('@')[1])
+      return res.status(400).json({ error: 'Domínio de e-mail não habilitado para gerar assinaturas.' })
     }
 
-    const normalizedEmail = requesterEmail.trim().toLowerCase()
     const dataHash = hashSignatureItems(signatureItems)
     const now = new Date().toISOString()
 
@@ -85,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       metadata: { type, item_count: signatureItems.length },
     })
 
-    // ── Gerar tokens e notificar gestores (em paralelo) ──────────────────────
+    // ── Gerar tokens e notificar gestores da empresa (em paralelo) ───────────
     const tokenExpiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
 
     await Promise.all(
@@ -115,6 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           managerEmail,
           requesterName: requesterName.trim(),
           requesterEmail: normalizedEmail,
+          companyName,
           type,
           signatureItems,
           token,
@@ -127,6 +132,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await sendRequesterConfirmationEmail({
       requesterName: requesterName.trim(),
       requesterEmail: normalizedEmail,
+      companyName,
       type,
       count: signatureItems.length,
     })
