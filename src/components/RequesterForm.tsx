@@ -76,7 +76,7 @@ export function RequesterForm() {
 									<div className="flex items-center gap-1.5 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
 										<CheckCircle2 className="h-4 w-4 shrink-0" />
 										<span>
-											Empresa detectada: <strong>{company.name}</strong>
+											Empreendimento detectada: <strong>{company.name}</strong>
 										</span>
 									</div>
 								)}
