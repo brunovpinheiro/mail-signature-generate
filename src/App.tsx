@@ -97,8 +97,9 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-[#0b2a5b] text-white">
-        <div className="container mx-auto flex items-center justify-center gap-2 px-4 py-4">
-          <h1 className="text-xl font-bold">{requester.company.name} — Gerador de Assinaturas</h1>
+        <div className="container mx-auto flex items-center justify-between px-4 py-3">
+          <img src="/logo-navbar.png" alt="Logo" className="h-8" />
+          <span className="text-base font-normal">Gerador de Assinaturas</span>
         </div>
       </header>
 
