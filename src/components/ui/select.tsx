@@ -55,9 +55,10 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
 )
 SelectTrigger.displayName = 'SelectTrigger'
 
-function SelectValue({ placeholder }: { placeholder?: string }) {
+function SelectValue({ placeholder, children }: { placeholder?: string; children?: React.ReactNode }) {
   const { value } = React.useContext(SelectContext)
-  return <span>{value || placeholder}</span>
+  const display = children ?? value
+  return <span>{display || placeholder}</span>
 }
 
 const SelectContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(

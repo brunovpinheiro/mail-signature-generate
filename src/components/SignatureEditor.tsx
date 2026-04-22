@@ -3,7 +3,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { SignatureData } from "@/types/signature";
+import { COMPANY_DOMAINS, type CompanyConfig } from "@/lib/company-domains";
 
 function isValidEmail(value: string): boolean {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -20,14 +22,21 @@ function formatPhone(value: string): string {
 interface SignatureEditorProps {
 	data: SignatureData;
 	onChange: (data: Partial<SignatureData>) => void;
+	selectedCompanyDomain?: string;
+	onCompanyChange?: (company: CompanyConfig) => void;
 }
 
-export function SignatureEditor({ data, onChange }: SignatureEditorProps) {
+export function SignatureEditor({ data, onChange, selectedCompanyDomain, onCompanyChange }: SignatureEditorProps) {
 	const [emailError, setEmailError] = useState(false);
 
 	function handleEmailChange(value: string) {
 		onChange({ email: value });
 		setEmailError(value !== "" && !isValidEmail(value));
+	}
+
+	function handleCompanyChange(domain: string) {
+		const company = COMPANY_DOMAINS.find((c) => c.domain === domain);
+		if (company && onCompanyChange) onCompanyChange(company);
 	}
 
 	return (
@@ -36,6 +45,31 @@ export function SignatureEditor({ data, onChange }: SignatureEditorProps) {
 				<CardTitle className="text-lg">Editor de Assinatura</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-6">
+				<div className="space-y-4">
+					<h4 className="text-sm font-medium text-muted-foreground">Empresa / Template</h4>
+					<div className="space-y-2">
+						<Label htmlFor="company">Empresa</Label>
+						<Select value={selectedCompanyDomain} onValueChange={handleCompanyChange}>
+							<SelectTrigger id="company">
+								<SelectValue placeholder="Selecione a empresa...">
+									{selectedCompanyDomain
+										? COMPANY_DOMAINS.find((c) => c.domain === selectedCompanyDomain)?.name
+										: undefined}
+								</SelectValue>
+							</SelectTrigger>
+							<SelectContent>
+								{COMPANY_DOMAINS.map((company) => (
+									<SelectItem key={company.domain} value={company.domain}>
+										{company.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				</div>
+
+				<Separator />
+
 				<div className="space-y-4">
 					<h4 className="text-sm font-medium text-muted-foreground">Dados Obrigatórios</h4>
 					<div className="grid grid-cols-2 gap-4">

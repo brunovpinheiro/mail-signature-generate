@@ -58,10 +58,11 @@ function SubmittedState({ onReset }: { onReset: () => void }) {
 // ── Aplicação principal (aba Individual + Em Massa) ───────────────────────────
 function MainApp() {
   const { requester } = useRequester()
+  const [selectedCompany, setSelectedCompany] = useState(requester?.company)
   const { signatureData, setSignatureData, generatedHtml, isValid } = useSignatureEditor({
-    templateId: requester?.company.templateId,
-    logoUrl: requester?.company.logoUrl,
-    defaultWebsite: requester?.company.defaultWebsite,
+    templateId: selectedCompany?.templateId,
+    logoUrl: selectedCompany?.logoUrl,
+    defaultWebsite: selectedCompany?.defaultWebsite,
   })
   const { exportConfig, setExportConfig, copyHtml } = useExport()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -111,7 +112,12 @@ function MainApp() {
           <TabsContent value="single">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
               <div className="space-y-6">
-                <SignatureEditor data={signatureData} onChange={setSignatureData} />
+                <SignatureEditor
+                  data={signatureData}
+                  onChange={setSignatureData}
+                  selectedCompanyDomain={selectedCompany?.domain}
+                  onCompanyChange={(company) => setSelectedCompany(company)}
+                />
                 <SignaturePreview html={generatedHtml} />
               </div>
               <div>
