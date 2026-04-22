@@ -161,8 +161,9 @@ function PageShell({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
 			<header className="border-b bg-[#0b2a5b] text-white">
-				<div className="container mx-auto flex items-center justify-center px-4 py-4">
-					<h1 className="text-xl font-bold">Tacla Shopping - Gerador de Assinaturas</h1>
+				<div className="container mx-auto flex items-center justify-between px-4 py-5">
+					<img src="/logo-navbar.png" alt="Logo" className="h-8" />
+					<span className="text-base font-normal">Gerador de Assinaturas</span>
 				</div>
 			</header>
 			<main className="flex-1 flex items-center justify-center px-4 py-8">{children}</main>

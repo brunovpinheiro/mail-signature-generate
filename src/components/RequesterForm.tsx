@@ -37,8 +37,9 @@ export function RequesterForm() {
 	return (
 		<div className="min-h-screen bg-background flex flex-col">
 			<header className="border-b bg-[#0b2a5b] text-white">
-				<div className="container mx-auto flex items-center justify-center gap-2 px-4 py-4">
-					<h1 className="text-xl font-bold">Tacla Shopping - Gerador de Assinaturas</h1>
+				<div className="container mx-auto flex items-center justify-between px-4 py-5">
+					<img src="/logo-navbar.png" alt="Logo" className="h-8" />
+					<span className="text-base font-normal">Gerador de Assinaturas</span>
 				</div>
 			</header>
 
@@ -60,13 +61,7 @@ export function RequesterForm() {
 								<Label htmlFor="req-name">
 									Nome completo <span className="text-red-500">*</span>
 								</Label>
-								<Input
-									id="req-name"
-									placeholder="Seu nome completo"
-									value={name}
-									onChange={(e) => setName(e.target.value)}
-									className={submitted && !name.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}
-								/>
+								<Input id="req-name" placeholder="Seu nome completo" value={name} onChange={(e) => setName(e.target.value)} className={submitted && !name.trim() ? "border-red-500 focus-visible:ring-red-500" : ""} />
 								{submitted && !name.trim() && <p className="text-sm text-red-500">Nome é obrigatório.</p>}
 							</div>
 
@@ -74,27 +69,15 @@ export function RequesterForm() {
 								<Label htmlFor="req-email">
 									E-mail corporativo <span className="text-red-500">*</span>
 								</Label>
-								<Input
-									id="req-email"
-									type="email"
-									placeholder="seu@empresa.com.br"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									onBlur={() => setEmailTouched(true)}
-									className={
-										emailFormatError || (submitted && !isValidEmail(email)) || domainError || (submitted && !domainValid)
-											? "border-red-500 focus-visible:ring-red-500"
-											: showEmailBadge && company
-											? "border-green-500 focus-visible:ring-green-500"
-											: ""
-									}
-								/>
+								<Input id="req-email" type="email" placeholder="seu@empresa.com.br" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmailTouched(true)} className={emailFormatError || (submitted && !isValidEmail(email)) || domainError || (submitted && !domainValid) ? "border-red-500 focus-visible:ring-red-500" : showEmailBadge && company ? "border-green-500 focus-visible:ring-green-500" : ""} />
 
 								{/* Feedback de empresa detectada */}
 								{showEmailBadge && company && (
 									<div className="flex items-center gap-1.5 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
 										<CheckCircle2 className="h-4 w-4 shrink-0" />
-										<span>Empresa detectada: <strong>{company.name}</strong></span>
+										<span>
+											Empresa detectada: <strong>{company.name}</strong>
+										</span>
 									</div>
 								)}
 
@@ -107,16 +90,10 @@ export function RequesterForm() {
 								)}
 
 								{/* Formato inválido */}
-								{(emailFormatError || (submitted && !isValidEmail(email))) && !domainError && (
-									<p className="text-sm text-red-500">Informe um e-mail válido.</p>
-								)}
+								{(emailFormatError || (submitted && !isValidEmail(email))) && !domainError && <p className="text-sm text-red-500">Informe um e-mail válido.</p>}
 							</div>
 
-							<Button
-								type="submit"
-								className="w-full bg-[#0b2a5b] text-white hover:bg-[#0b2a5b]/90"
-								size="lg"
-							>
+							<Button type="submit" className="w-full bg-[#0b2a5b] text-white hover:bg-[#0b2a5b]/90" size="lg">
 								Continuar
 							</Button>
 						</form>
