@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { data, error } = await supabase
     .from('requests')
     .select(
-      'id, type, requester_name, signature_items, status, decided_at, decision_by'
+      'id, type, requester_name, requester_email, company_domain, signature_items, status, decided_at, decision_by'
     )
     .eq('id', id)
     .single()
@@ -26,17 +26,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     | 'id'
     | 'type'
     | 'requester_name'
+    | 'requester_email'
+    | 'company_domain'
     | 'signature_items'
     | 'status'
     | 'decided_at'
     | 'decision_by'
   >
 
-  // Retorna apenas dados necessários; nunca expõe requester_email ou tokens
+  // Retorna apenas dados necessários; nunca expõe tokens
   return res.status(200).json({
     id: row.id,
     type: row.type,
     requesterName: row.requester_name,
+    companyDomain: row.company_domain ?? row.requester_email.split('@')[1],
     status: row.status,
     decidedAt: row.decided_at,
     // Apenas expõe signature_items se aprovado

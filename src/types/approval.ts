@@ -40,6 +40,7 @@ export interface DownloadRequestData {
   id: string
   type: RequestType
   requesterName: string
+  companyDomain: string
   status: RequestStatus
   decidedAt: string | null
   signatureItems: SignatureData[] | null

@@ -9,6 +9,8 @@ export interface ExportConfig {
 
 export interface BulkExportConfig extends ExportConfig {
   templateId: string
+  logoUrl?: string
+  accentColor?: string
 }
 
 export interface BulkSignatureItem {

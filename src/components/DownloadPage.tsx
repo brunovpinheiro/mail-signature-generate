@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Download, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
 import { getDownloadRequest } from "@/lib/api";
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from "@/lib/templates";
+import { getCompanyByDomain } from "@/lib/company-domains";
 import { renderHtmlToImage } from "@/lib/image-utils";
 import { downloadDataUrl, downloadImagesAsZip, sanitizeFilename } from "@/lib/export-utils";
 import { toast } from "sonner";
@@ -28,25 +29,28 @@ export function DownloadPage() {
 
 	const handleDownload = useCallback(async () => {
 		if (!data?.signatureItems) return;
-		const template = getTemplateById(DEFAULT_TEMPLATE_ID);
+		const company = getCompanyByDomain(data.companyDomain ?? "");
+		const template = getTemplateById(company?.templateId ?? DEFAULT_TEMPLATE_ID);
 		if (!template) return;
+		const logoUrl = company?.logoUrl;
+		const accentColor = company?.accentColor;
+		const width = template.defaultWidth;
 
 		setGenerating(true);
 		try {
 			if (data.type === "single") {
 				const item = data.signatureItems[0];
-				const html = template.render(item);
-				const dataUrl = await renderHtmlToImage(html, { width: 540, format: "png" });
+				const html = template.render(item, logoUrl, accentColor);
+				const dataUrl = await renderHtmlToImage(html, { width, format: "png" });
 				const filename = `${sanitizeFilename(item.name || "assinatura")}.png`;
 				downloadDataUrl(dataUrl, filename);
 				toast.success("Download iniciado!");
 			} else {
-				// Gerar e zipar em massa
 				const images = [];
 				for (let i = 0; i < data.signatureItems.length; i++) {
 					const item = data.signatureItems[i];
-					const html = template.render(item);
-					const dataUrl = await renderHtmlToImage(html, { width: 540, format: "png" });
+					const html = template.render(item, logoUrl, accentColor);
+					const dataUrl = await renderHtmlToImage(html, { width, format: "png" });
 					images.push({ name: item.name, dataUrl, index: i });
 				}
 				await downloadImagesAsZip(images, "png");
@@ -116,7 +120,10 @@ export function DownloadPage() {
 	}
 
 	// status === 'approved'
-	const template = getTemplateById(DEFAULT_TEMPLATE_ID);
+	const company = getCompanyByDomain(data.companyDomain ?? "");
+	const template = getTemplateById(company?.templateId ?? DEFAULT_TEMPLATE_ID);
+	const logoUrl = company?.logoUrl;
+	const accentColor = company?.accentColor;
 	const typeLabel = data.type === "single" ? "individual" : `em massa (${data.signatureItems!.length} assinaturas)`;
 
 	return (
@@ -135,7 +142,7 @@ export function DownloadPage() {
 						{data.signatureItems!.map((item: SignatureData, i: number) => (
 							<div key={i} className="rounded-md border bg-white p-4">
 								{data.type === "bulk" && <p className="text-xs text-muted-foreground mb-2 font-medium">{item.name}</p>}
-								{template && <div className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: template.render(item) }} />}
+								{template && <div className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: template.render(item, logoUrl, accentColor) }} />}
 							</div>
 						))}
 

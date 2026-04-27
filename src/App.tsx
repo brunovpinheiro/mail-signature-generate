@@ -13,6 +13,7 @@ import { DownloadPage } from "@/components/DownloadPage";
 import { AdminLogin } from "@/components/AdminLogin";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { AdminRequestDetail } from "@/components/AdminRequestDetail";
+import { DevPreview } from "@/components/DevPreview";
 import { RequesterProvider, useRequester } from "@/context/RequesterContext";
 import { useSignatureEditor } from "@/hooks/useSignatureEditor";
 import { useExport } from "@/hooks/useExport";
@@ -75,6 +76,7 @@ function MainApp() {
 				requesterEmail: requester.email,
 				type: "single",
 				signatureItems: [signatureData],
+				companyDomain: selectedCompany?.domain,
 			});
 			setSubmitted(true);
 		} catch (err) {
@@ -149,6 +151,7 @@ function App() {
 					<Route path="/download/:requestId" element={<DownloadPage />} />
 					<Route path="/admin" element={<AdminApp />} />
 					<Route path="/admin/requests/:id" element={<AdminRequestDetail />} />
+					{import.meta.env.DEV && <Route path="/dev" element={<DevPreview />} />}
 					<Route path="/*" element={<MainApp />} />
 				</Routes>
 			</RequesterProvider>
