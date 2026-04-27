@@ -57,7 +57,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/catuai-palladium.png",
 		defaultWebsite: "https://catuaipalladium.com.br",
-		accentColor: "#EC1B2E",
+		accentColor: "#2C85A0",
 	},
 	{
 		domain: "itajaishopping.com.br",
@@ -81,7 +81,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/city-center.png",
 		defaultWebsite: "https://citycenteroutlet.com.br",
-		accentColor: "#BAC620",
+		accentColor: "#4CAF37",
 	},
 	{
 		domain: "venturashopping.com.br",
