@@ -46,9 +46,8 @@ export function SignatureEditor({ data, onChange, selectedCompanyDomain, onCompa
 			</CardHeader>
 			<CardContent className="space-y-6">
 				<div className="space-y-4">
-					<h4 className="text-sm font-medium text-muted-foreground">Empreendimento</h4>
 					<div className="space-y-2">
-						<Label htmlFor="company">Empreendimento</Label>
+						<Label htmlFor="company">Seleionar Empreendimento</Label>
 						<Select value={selectedCompanyDomain} onValueChange={handleCompanyChange}>
 							<SelectTrigger id="company">
 								<SelectValue placeholder="Selecione a empresa...">{selectedCompanyDomain ? COMPANY_DOMAINS.find((c) => c.domain === selectedCompanyDomain)?.name : undefined}</SelectValue>
