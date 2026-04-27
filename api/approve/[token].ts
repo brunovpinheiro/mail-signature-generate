@@ -95,6 +95,8 @@ async function handleGet(req: VercelRequest, res: VercelResponse) {
       id: requestRow.id,
       type: requestRow.type,
       requesterName: requestRow.requester_name,
+      requesterEmail: requestRow.requester_email,
+      companyDomain: requestRow.company_domain ?? requestRow.requester_email.split('@')[1],
       signatureItems: requestRow.signature_items,
       createdAt: requestRow.created_at,
     },

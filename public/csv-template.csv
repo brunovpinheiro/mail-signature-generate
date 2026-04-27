@@ -1,3 +1,3 @@
-name,jobTitle,email,phone,website
-"Bruno Pinheiro","Developer","bruno@email.com","+55 11 99999-9999","https://empresa.com"
-"Maria Silva","Designer","maria@email.com","+55 11 88888-8888","https://empresa.com"
+name,jobTitle,email,mobilePhone,phone,website
+"Bruno Pinheiro","Developer","bruno@email.com","11 99999-9999","11 99999-9999","https://empresa.com"
+"Maria Silva","Designer","maria@email.com","11 88888-8888","11 99999-9999","https://empresa.com"

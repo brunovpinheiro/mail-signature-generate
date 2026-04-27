@@ -19,11 +19,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { requesterName, requesterEmail, type, signatureItems } = req.body as {
+    const { requesterName, requesterEmail, type, signatureItems, companyDomain } = req.body as {
       requesterName: string
       requesterEmail: string
       type: RequestType
       signatureItems: SignatureItem[]
+      companyDomain?: string
     }
 
     // ── Validação de entrada ────────────────────────────────────────────────
@@ -64,6 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .insert({
         requester_name: requesterName.trim(),
         requester_email: normalizedEmail,
+        company_domain: companyDomain ?? normalizedEmail.split('@')[1],
         type,
         signature_items: signatureItems,
         data_hash: dataHash,

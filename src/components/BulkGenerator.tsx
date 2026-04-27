@@ -1,11 +1,13 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BulkPreviewGrid } from "./BulkPreviewGrid";
 import { useBulkGenerator } from "@/hooks/useBulkGenerator";
 import { DEFAULT_TEMPLATE_ID, getTemplateById } from "@/lib/templates";
+import { COMPANY_DOMAINS, getCompanyByEmail, getCompanyByDomain } from "@/lib/company-domains";
 import { submitRequest } from "@/lib/api";
 import { useRequester } from "@/context/RequesterContext";
 import { Upload, FileDown, Loader2, Trash2, AlertCircle, Send, CheckCircle2, Mail } from "lucide-react";
@@ -15,6 +17,14 @@ export function BulkGenerator() {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { requester } = useRequester();
 	const { items, errors, isProcessing, handleParseCSV, clearItems } = useBulkGenerator();
+
+	const defaultDomain = useMemo(
+		() => (requester ? (getCompanyByEmail(requester.email)?.domain ?? COMPANY_DOMAINS[0].domain) : COMPANY_DOMAINS[0].domain),
+		[requester],
+	);
+	const [selectedDomain, setSelectedDomain] = useState<string>(defaultDomain);
+	const companyConfig = useMemo(() => getCompanyByDomain(selectedDomain), [selectedDomain]);
+	const template = getTemplateById(companyConfig?.templateId ?? DEFAULT_TEMPLATE_ID);
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
@@ -51,6 +61,7 @@ export function BulkGenerator() {
 				requesterEmail: requester.email,
 				type: "bulk",
 				signatureItems: items.map((i) => i.data),
+				companyDomain: selectedDomain,
 			});
 			setSubmitted(true);
 		} catch (err) {
@@ -58,9 +69,7 @@ export function BulkGenerator() {
 		} finally {
 			setIsSubmitting(false);
 		}
-	}, [requester, items]);
-
-	const template = getTemplateById(DEFAULT_TEMPLATE_ID);
+	}, [requester, items, selectedDomain]);
 
 	// ── Confirmação pós-envio ─────────────────────────────────────────────────
 	if (submitted) {
@@ -98,6 +107,25 @@ export function BulkGenerator() {
 					<CardTitle className="text-lg">Geração em Massa</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-6">
+					{/* Seletor de Empreendimento */}
+					<div className="space-y-2">
+						<Label htmlFor="bulk-company">Empreendimento</Label>
+						<Select value={selectedDomain} onValueChange={setSelectedDomain}>
+							<SelectTrigger id="bulk-company">
+								<SelectValue>{companyConfig?.name ?? "Selecione..."}</SelectValue>
+							</SelectTrigger>
+							<SelectContent>
+								{COMPANY_DOMAINS.map((company) => (
+									<SelectItem key={company.domain} value={company.domain}>
+										{company.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					<Separator />
+
 					{/* Upload Area */}
 					<div className="space-y-3">
 						<div className="flex items-center justify-between">
@@ -131,7 +159,7 @@ export function BulkGenerator() {
 						<>
 							<Separator />
 
-							<BulkPreviewGrid items={items} template={template} />
+							<BulkPreviewGrid items={items} template={template} logoUrl={companyConfig?.logoUrl} accentColor={companyConfig?.accentColor} />
 
 							{/* Actions */}
 							<div className="space-y-3">

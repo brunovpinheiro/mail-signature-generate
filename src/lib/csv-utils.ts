@@ -12,8 +12,12 @@ export const COLUMN_MAPPINGS: Record<string, keyof SignatureData> = {
   'e-mail': 'email',
   phone: 'phone',
   telefone: 'phone',
+  mobile: 'mobile',
+  mobilephone: 'mobile',
+  celular: 'mobile',
   website: 'website',
   site: 'website',
+  url: 'website',
 }
 
 const REQUIRED_FIELDS: (keyof SignatureData)[] = ['name', 'jobTitle']

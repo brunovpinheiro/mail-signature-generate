@@ -8,6 +8,7 @@ export interface SubmitRequestPayload {
   requesterEmail: string
   type: RequestType
   signatureItems: SignatureData[]
+  companyDomain?: string
 }
 
 export interface SubmitRequestResult {
@@ -20,6 +21,8 @@ export interface ApprovalTokenView {
     id: string
     type: RequestType
     requesterName: string
+    requesterEmail: string
+    companyDomain: string
     signatureItems: SignatureData[]
     createdAt: string
   }

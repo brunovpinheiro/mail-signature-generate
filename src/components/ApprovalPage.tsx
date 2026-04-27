@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle, AlertCircle, ShieldCheck } from "lucide-react";
 import { getApprovalToken, postApprovalDecision } from "@/lib/api";
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from "@/lib/templates";
+import { getCompanyByDomain } from "@/lib/company-domains";
 import type { ApprovalTokenResponse } from "@/types/approval";
 import type { SignatureData } from "@/types/signature";
 
@@ -114,7 +115,10 @@ export function ApprovalPage() {
 
 	// ── Tela principal de aprovação ────────────────────────────────────────────
 	const { requestData, managerEmailMasked } = data;
-	const template = getTemplateById(DEFAULT_TEMPLATE_ID);
+	const company = getCompanyByDomain(requestData.companyDomain);
+	const template = getTemplateById(company?.templateId ?? DEFAULT_TEMPLATE_ID);
+	const logoUrl = company?.logoUrl;
+	const accentColor = company?.accentColor;
 	const typeLabel = requestData.type === "single" ? "Individual" : `Em Massa (${requestData.signatureItems.length} assinaturas)`;
 
 	return (
@@ -151,7 +155,7 @@ export function ApprovalPage() {
 						{requestData.signatureItems.map((item: SignatureData, i: number) => (
 							<div key={i} className="rounded-md border bg-white p-4">
 								{requestData.type === "bulk" && <p className="text-xs text-muted-foreground mb-2 font-medium">{item.name}</p>}
-								{template && <div className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: template.render(item) }} />}
+								{template && <div className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: template.render(item, logoUrl, accentColor) }} />}
 							</div>
 						))}
 					</CardContent>

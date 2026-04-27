@@ -13,6 +13,7 @@ export interface RequestRow {
   id: string
   requester_name: string
   requester_email: string
+  company_domain: string | null
   type: RequestType
   signature_items: SignatureItem[]
   data_hash: string
