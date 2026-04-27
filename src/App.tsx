@@ -57,18 +57,14 @@ function MainApp() {
 		templateId: selectedCompany?.templateId,
 		logoUrl: selectedCompany?.logoUrl,
 		defaultWebsite: selectedCompany?.defaultWebsite,
+		accentColor: selectedCompany?.accentColor,
 	});
-	const { exportConfig, setExportConfig, copyHtml } = useExport();
+	const { exportConfig, setExportConfig } = useExport();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
 
 	if (!requester) return <RequesterForm />;
 	if (submitted) return <SubmittedState onReset={() => setSubmitted(false)} />;
-
-	const handleCopyHtml = async () => {
-		await copyHtml(generatedHtml);
-		toast.success("HTML copiado para o clipboard!");
-	};
 
 	const handleSubmitForApproval = async () => {
 		if (!isValid || !requester) return;
@@ -111,7 +107,7 @@ function MainApp() {
 								<SignaturePreview html={generatedHtml} />
 							</div>
 							<div>
-								<ExportPanel config={exportConfig} onConfigChange={setExportConfig} onCopyHtml={handleCopyHtml} onSubmitForApproval={handleSubmitForApproval} isSubmitting={isSubmitting} disabled={!isValid} />
+								<ExportPanel config={exportConfig} onConfigChange={setExportConfig} onSubmitForApproval={handleSubmitForApproval} isSubmitting={isSubmitting} disabled={!isValid} />
 							</div>
 						</div>
 					</TabsContent>

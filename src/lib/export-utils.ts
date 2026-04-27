@@ -36,7 +36,6 @@ export async function generateBulkImages(
   templateFn: (data: SignatureData) => string,
   onProgress: (percent: number) => void
 ): Promise<GeneratedImage[]> {
-  const format = config.format === 'png' ? 'png' : 'jpg'
   const images: GeneratedImage[] = []
 
   for (let i = 0; i < items.length; i++) {
@@ -45,8 +44,7 @@ export async function generateBulkImages(
 
     const dataUrl = await renderHtmlToImage(html, {
       width: config.width,
-      format,
-      quality: config.jpegQuality,
+      format: 'png',
     })
 
     images.push({
@@ -63,7 +61,7 @@ export async function generateBulkImages(
 
 export async function downloadImagesAsZip(
   images: GeneratedImage[],
-  format: 'png' | 'jpg'
+  format: 'png' = 'png'
 ): Promise<void> {
   const { default: JSZip } = await import('jszip')
   const { saveAs } = await import('file-saver')

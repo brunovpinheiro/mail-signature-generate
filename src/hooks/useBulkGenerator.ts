@@ -10,7 +10,6 @@ interface UseBulkGeneratorReturn {
   isProcessing: boolean
   progress: number
   generatedImages: GeneratedImage[]
-  exportFormat: 'png' | 'jpg'
   handleParseCSV: (file: File) => void
   generateAllImages: (config: BulkExportConfig) => Promise<void>
   downloadAllAsZip: () => Promise<void>
@@ -25,7 +24,6 @@ export function useBulkGenerator(): UseBulkGeneratorReturn {
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
-  const [exportFormat, setExportFormat] = useState<'png' | 'jpg'>('png')
 
   const handleParseCSV = useCallback((file: File) => {
     setIsProcessing(true)
@@ -50,7 +48,6 @@ export function useBulkGenerator(): UseBulkGeneratorReturn {
       setIsProcessing(true)
       setProgress(0)
       setGeneratedImages([])
-      setExportFormat(config.format === 'png' ? 'png' : 'jpg')
 
       const images = await generateBulkImages(
         items,
@@ -67,17 +64,17 @@ export function useBulkGenerator(): UseBulkGeneratorReturn {
 
   const downloadAllAsZip = useCallback(async () => {
     if (generatedImages.length === 0) return
-    await downloadImagesAsZip(generatedImages, exportFormat)
-  }, [generatedImages, exportFormat])
+    await downloadImagesAsZip(generatedImages)
+  }, [generatedImages])
 
   const downloadSingleImage = useCallback(
     (index: number) => {
       const image = generatedImages.find((img) => img.index === index)
       if (!image) return
-      const filename = `${sanitizeFilename(image.name)}_${index + 1}.${exportFormat}`
+      const filename = `${sanitizeFilename(image.name)}_${index + 1}.png`
       downloadDataUrl(image.dataUrl, filename)
     },
-    [generatedImages, exportFormat]
+    [generatedImages]
   )
 
   const clearItems = useCallback(() => {
@@ -98,7 +95,6 @@ export function useBulkGenerator(): UseBulkGeneratorReturn {
     isProcessing,
     progress,
     generatedImages,
-    exportFormat,
     handleParseCSV,
     generateAllImages,
     downloadAllAsZip,

@@ -9,6 +9,8 @@ export interface CompanyConfig {
 	logoUrl: string;
 	/** URL padrão pré-preenchida no campo "Website" do editor */
 	defaultWebsite: string;
+	/** Cor de destaque usada no template shopping (cargo, borda inferior) */
+	accentColor?: string;
 }
 
 /**
@@ -31,6 +33,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/palladium-curitiba.png",
 		defaultWebsite: "https://palladiumcuritiba.com.br",
+		accentColor: "#3797AF",
 	},
 	{
 		domain: "palladiumumuarama.com.br",
@@ -38,6 +41,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/palladium-umuarama.png",
 		defaultWebsite: "https://palladiumumuarama.com.br",
+		accentColor: "#3797AF",
 	},
 	{
 		domain: "palladiumpontagrossa.com.br",
@@ -45,6 +49,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/palladium-pontagrossa.png",
 		defaultWebsite: "https://palladiumpontagrossa.com.br",
+		accentColor: "#3797AF",
 	},
 	{
 		domain: "catuaipalladium.com.br",
@@ -52,6 +57,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/catuai-palladium.png",
 		defaultWebsite: "https://catuaipalladium.com.br",
+		accentColor: "#EC1B2E",
 	},
 	{
 		domain: "itajaishopping.com.br",
@@ -59,6 +65,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/itajai-shopping.png",
 		defaultWebsite: "https://itajaishopping.com.br",
+		accentColor: "#68C4D0",
 	},
 	{
 		domain: "outletportobelo.com.br",
@@ -66,6 +73,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/porto-belo.png",
 		defaultWebsite: "https://outletportobelo.com.br",
+		accentColor: "#F5A058",
 	},
 	{
 		domain: "citycenteroutlet.com.br",
@@ -73,6 +81,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/city-center.png",
 		defaultWebsite: "https://citycenteroutlet.com.br",
+		accentColor: "#BAC620",
 	},
 	{
 		domain: "venturashopping.com.br",
@@ -80,6 +89,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/ventura.png",
 		defaultWebsite: "https://venturashopping.com.br",
+		accentColor: "#FFA700",
 	},
 	{
 		domain: "shoppingestacao.com.br",
@@ -87,6 +97,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/estacao.png",
 		defaultWebsite: "https://shoppingestacao.com.br",
+		accentColor: "#419CFF",
 	},
 	{
 		domain: "jockeyplaza.com.br",
@@ -94,6 +105,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/jockey-plaza.png",
 		defaultWebsite: "https://jockeyplaza.com.br",
+		accentColor: "#BA914B",
 	},
 	{
 		domain: "shoppingcidadesorocaba.com.br",
@@ -101,6 +113,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/shopping-cidade.png",
 		defaultWebsite: "https://shoppingcidadesorocaba.com.br",
+		accentColor: "#DE1A22",
 	},
 	{
 		domain: "plazacamposgerais.com.br",
@@ -108,6 +121,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		templateId: "shopping",
 		logoUrl: "/logos/plaza-campos-gerais.png",
 		defaultWebsite: "https://plazacamposgerais.com.br",
+		accentColor: "#8B905A",
 	},
 ];
 

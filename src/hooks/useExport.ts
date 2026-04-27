@@ -10,7 +10,6 @@ interface UseExportReturn {
   generateImage: (html: string) => Promise<void>
   downloadImage: (name: string) => void
   clearImage: () => void
-  copyHtml: (html: string) => Promise<void>
   isExporting: boolean
 }
 
@@ -18,7 +17,6 @@ export function useExport(): UseExportReturn {
   const [exportConfig, setExportConfigState] = useState<ExportConfig>({
     format: 'png',
     width: 540,
-    jpegQuality: 0.92,
   })
   const [isExporting, setIsExporting] = useState(false)
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
@@ -34,11 +32,9 @@ export function useExport(): UseExportReturn {
 
       setIsExporting(true)
       try {
-        const format = exportConfig.format === 'jpg' ? 'jpg' : 'png'
         const dataUrl = await renderHtmlToImage(html, {
           width: exportConfig.width,
-          format,
-          quality: exportConfig.jpegQuality,
+          format: 'png',
         })
         setGeneratedImageUrl(dataUrl)
       } finally {
@@ -50,17 +46,12 @@ export function useExport(): UseExportReturn {
 
   const downloadImage = useCallback((name: string) => {
     if (!generatedImageUrl) return
-    const ext = exportConfig.format === 'jpg' ? 'jpg' : 'png'
-    const filename = name ? `${sanitizeFilename(name)}.${ext}` : `signature.${ext}`
+    const filename = name ? `${sanitizeFilename(name)}.png` : 'signature.png'
     downloadDataUrl(generatedImageUrl, filename)
-  }, [generatedImageUrl, exportConfig.format])
+  }, [generatedImageUrl])
 
   const clearImage = useCallback(() => {
     setGeneratedImageUrl(null)
-  }, [])
-
-  const copyHtml = useCallback(async (html: string) => {
-    await navigator.clipboard.writeText(html)
   }, [])
 
   return {
@@ -70,7 +61,6 @@ export function useExport(): UseExportReturn {
     generateImage,
     downloadImage,
     clearImage,
-    copyHtml,
     isExporting,
   }
 }

@@ -95,6 +95,10 @@ export function SignatureEditor({ data, onChange, selectedCompanyDomain, onCompa
 							<Input id="phone" placeholder="(00) 00000-0000" value={data.phone ?? ""} onChange={(e) => onChange({ phone: formatPhone(e.target.value) })} />
 						</div>
 						<div className="space-y-2">
+							<Label htmlFor="mobile">Celular</Label>
+							<Input id="mobile" placeholder="(00) 00000-0000" value={data.mobile ?? ""} onChange={(e) => onChange({ mobile: formatPhone(e.target.value) })} />
+						</div>
+						<div className="space-y-2">
 							<Label htmlFor="website">Website</Label>
 							<Input id="website" placeholder="https://seusite.com" value={data.website ?? ""} onChange={(e) => onChange({ website: e.target.value })} disabled />
 						</div>

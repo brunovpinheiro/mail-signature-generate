@@ -1,11 +1,10 @@
 import type { SignatureData } from './signature'
 
-export type ExportFormat = 'jpg' | 'png' | 'html'
+export type ExportFormat = 'png'
 
 export interface ExportConfig {
   format: ExportFormat
   width: number
-  jpegQuality: number
 }
 
 export interface BulkExportConfig extends ExportConfig {
