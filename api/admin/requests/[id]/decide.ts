@@ -27,9 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!['approve', 'reject'].includes(action ?? '')) {
     return res.status(400).json({ error: 'Ação inválida.' })
   }
-  if (action === 'reject' && !reason?.trim()) {
-    return res.status(400).json({ error: 'Justificativa obrigatória para reprovação.' })
-  }
 
   // ── Busca solicitação ─────────────────────────────────────────────────────
   const { data: requestRow, error: fetchError } = await supabase
@@ -82,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .update({
       status: newStatus,
       decision_by: session.email,
-      decision_reason: action === 'reject' ? reason!.trim() : null,
+      decision_reason: action === 'reject' ? (reason?.trim() ?? null) : null,
       decided_at: decidedAt,
     })
     .eq('id', requestId)
@@ -133,7 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await sendRequesterRejectedEmail({
       requesterName: row.requester_name,
       requesterEmail: row.requester_email,
-      reason: reason!.trim(),
+      reason: reason?.trim() ?? '',
       companyName,
     })
   }

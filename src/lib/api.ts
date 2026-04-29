@@ -97,6 +97,26 @@ export async function getAdminRequests(token: string): Promise<AdminRequestsResu
   })
 }
 
+export interface AdminBulkResult {
+  requestId: string
+  notified: number
+  skipped: number
+}
+
+export async function submitAdminBulk(
+  token: string,
+  payload: { signatureItems: AdminSignatureItem[]; companyDomain: string }
+): Promise<AdminBulkResult> {
+  return apiFetch<AdminBulkResult>('/api/admin/bulk', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function adminDecide(
   token: string,
   requestId: string,

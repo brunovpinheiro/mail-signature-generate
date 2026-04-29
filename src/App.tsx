@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SignatureEditor } from "@/components/SignatureEditor";
 import { SignaturePreview } from "@/components/SignaturePreview";
 import { ExportPanel } from "@/components/ExportPanel";
-import { BulkGenerator } from "@/components/BulkGenerator";
 import { RequesterForm } from "@/components/RequesterForm";
 import { ApprovalPage } from "@/components/ApprovalPage";
 import { DownloadPage } from "@/components/DownloadPage";
@@ -19,7 +17,7 @@ import { useSignatureEditor } from "@/hooks/useSignatureEditor";
 import { useExport } from "@/hooks/useExport";
 import { submitRequest } from "@/lib/api";
 import { Toaster, toast } from "sonner";
-import { CheckCircle2, Mail } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 // ── Tela de confirmação pós-envio ─────────────────────────────────────────────
 function SubmittedState({ onReset }: { onReset: () => void }) {
 	return (
@@ -35,11 +33,7 @@ function SubmittedState({ onReset }: { onReset: () => void }) {
 					<CardContent className="pt-8 pb-8 space-y-4 text-center">
 						<CheckCircle2 className="h-14 w-14 text-green-500 mx-auto" />
 						<h2 className="text-xl font-semibold text-[#0b2a5b]">Solicitação enviada!</h2>
-						<p className="text-sm text-muted-foreground">Sua assinatura foi enviada para aprovação dos gestores. Você receberá um e-mail com o resultado assim que a decisão for tomada.</p>
-						<div className="flex items-center justify-center gap-2 rounded-md bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700">
-							<Mail className="h-4 w-4 shrink-0" />
-							Fique de olho no seu e-mail!
-						</div>
+						<p className="text-sm text-muted-foreground">Sua solicitação foi enviada para a fila de aprovação. Você receberá um e-mail quando a decisão for tomada.</p>
 						<Button variant="outline" onClick={onReset} className="mt-2">
 							Fazer nova solicitação
 						</Button>
@@ -96,28 +90,15 @@ function MainApp() {
 			</header>
 
 			<main className="container mx-auto px-4 py-6">
-				<Tabs defaultValue="single">
-					<TabsList className="mb-6">
-						<TabsTrigger value="single">Individual</TabsTrigger>
-						<TabsTrigger value="bulk">Em Massa</TabsTrigger>
-					</TabsList>
-
-					<TabsContent value="single">
-						<div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-							<div className="space-y-6">
-								<SignatureEditor data={signatureData} onChange={setSignatureData} selectedCompanyDomain={selectedCompany?.domain} onCompanyChange={(company) => setSelectedCompany(company)} />
-								<SignaturePreview html={generatedHtml} />
-							</div>
-							<div>
-								<ExportPanel config={exportConfig} onConfigChange={setExportConfig} onSubmitForApproval={handleSubmitForApproval} isSubmitting={isSubmitting} disabled={!isValid} />
-							</div>
-						</div>
-					</TabsContent>
-
-					<TabsContent value="bulk">
-						<BulkGenerator />
-					</TabsContent>
-				</Tabs>
+				<div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+					<div className="space-y-6">
+						<SignatureEditor data={signatureData} onChange={setSignatureData} selectedCompanyDomain={selectedCompany?.domain} onCompanyChange={(company) => setSelectedCompany(company)} />
+						<SignaturePreview html={generatedHtml} />
+					</div>
+					<div>
+						<ExportPanel config={exportConfig} onConfigChange={setExportConfig} onSubmitForApproval={handleSubmitForApproval} isSubmitting={isSubmitting} disabled={!isValid} />
+					</div>
+				</div>
 			</main>
 
 			<Toaster position="bottom-right" richColors />

@@ -2,11 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { supabase } from './_lib/supabase.js'
 import { generateToken, hashSignatureItems } from './_lib/crypto.js'
 import { getApproversForRequester } from './_lib/approvers.js'
-import {
-  sendManagerApprovalEmail,
-  sendRequesterConfirmationEmail,
-} from './_lib/email.js'
-import { getCompanyNameByEmail } from './_lib/company-domains.js'
 import type { SignatureItem, RequestType } from './_lib/types.js'
 
 function isValidEmail(email: string): boolean {
@@ -47,7 +42,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const normalizedEmail = requesterEmail.trim().toLowerCase()
-    const companyName = getCompanyNameByEmail(normalizedEmail)
 
     // ── Busca aprovadores da empresa do solicitante ─────────────────────────
     const approvers = getApproversForRequester(normalizedEmail)
@@ -72,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         status: 'awaiting_approval',
         created_at: now,
       })
-      .select('id, created_at')
+      .select('id')
       .single()
 
     if (insertError || !requestRow) {
@@ -81,7 +75,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const requestId = requestRow.id as string
-    const createdAt = requestRow.created_at as string
 
     // ── Log: criação ─────────────────────────────────────────────────────────
     await supabase.from('audit_logs').insert({
@@ -91,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       metadata: { type, item_count: signatureItems.length },
     })
 
-    // ── Gerar tokens e notificar gestores da empresa (em paralelo) ───────────
+    // ── Gerar tokens de aprovação para os gestores ───────────────────────────
     const tokenExpiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
 
     await Promise.all(
@@ -117,27 +110,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           metadata: { token_prefix: token.slice(0, 8) },
         })
 
-        await sendManagerApprovalEmail({
-          managerEmail,
-          requesterName: requesterName.trim(),
-          requesterEmail: normalizedEmail,
-          companyName,
-          type,
-          signatureItems,
-          token,
-          createdAt,
-        })
       })
     )
-
-    // ── E-mail de confirmação ao solicitante ────────────────────────────────
-    await sendRequesterConfirmationEmail({
-      requesterName: requesterName.trim(),
-      requesterEmail: normalizedEmail,
-      companyName,
-      type,
-      count: signatureItems.length,
-    })
 
     return res.status(201).json({ requestId })
   } catch (err) {

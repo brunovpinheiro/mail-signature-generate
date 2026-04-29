@@ -1,3 +1,15 @@
 {
-	"approvers": ["email1@exemplo.com", "email2@exemplo.com"]
+	"taclashopping.com.br": ["gestor@taclashopping.com.br"],
+	"palladiumcuritiba.com.br": ["gestor@palladiumcuritiba.com.br"],
+	"palladiumumuarama.com.br": ["gestor@palladiumumuarama.com.br"],
+	"palladiumpontagrossa.com.br": ["gestor@palladiumpontagrossa.com.br"],
+	"catuaipalladium.com.br": ["gestor@catuaipalladium.com.br"],
+	"itajaishopping.com.br": ["gestor@itajaishopping.com.br"],
+	"outletportobelo.com.br": ["gestor@outletportobelo.com.br"],
+	"citycenteroutlet.com.br": ["gestor@citycenteroutlet.com.br"],
+	"venturashopping.com.br": ["gestor@venturashopping.com.br"],
+	"shoppingestacao.com.br": ["gestor@shoppingestacao.com.br"],
+	"jockeyplaza.com.br": ["gestor@jockeyplaza.com.br"],
+	"shoppingcidadesorocaba.com.br": ["gestor@shoppingcidadesorocaba.com.br"],
+	"plazacamposgerais.com.br": ["gestor@plazacamposgerais.com.br"]
 }

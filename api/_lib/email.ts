@@ -171,6 +171,35 @@ export async function sendRequesterApprovedEmail(opts: { requesterName: string; 
 	});
 }
 
+// ─── Gestor: resumo semanal de pendências ─────────────────────────────────
+
+export async function sendWeeklyDigestEmail(opts: { managerEmail: string; companyName: string; pendingCount: number }): Promise<void> {
+	const adminUrl = `${APP_URL}/admin`;
+	const companyLabel = opts.companyName;
+
+	const body = `
+    <h2 style="color:#0b2a5b;margin:0 0 12px;font-size:18px;">Solicitações aguardando aprovação</h2>
+    <p style="color:#444;line-height:1.6;margin:0 0 16px;">
+      Olá! Há <strong>${opts.pendingCount} solicitação(ões)</strong> de assinatura de e-mail de <strong>${companyLabel}</strong> aguardando sua aprovação no painel.
+    </p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${adminUrl}"
+         style="background:#0b2a5b;color:#ffffff;padding:14px 36px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;">
+        Acessar Painel de Aprovações
+      </a>
+    </div>
+    <p style="color:#888;font-size:12px;text-align:center;margin:0;">
+      Este é um resumo automático enviado toda segunda-feira.
+    </p>`;
+
+	await resend.emails.send({
+		from: FROM,
+		to: opts.managerEmail,
+		subject: `[${companyLabel}] ${opts.pendingCount} solicitação(ões) aguardando aprovação`,
+		html: wrapEmail(body),
+	});
+}
+
 // ─── Solicitante: reprovação ──────────────────────────────────────────────────
 
 export async function sendRequesterRejectedEmail(opts: { requesterName: string; requesterEmail: string; reason: string; companyName?: string }): Promise<void> {
@@ -184,10 +213,10 @@ export async function sendRequesterRejectedEmail(opts: { requesterName: string; 
     <p style="color:#444;line-height:1.6;margin:0 0 16px;">
       Infelizmente sua solicitação de assinatura de e-mail não foi aprovada.
     </p>
-    <div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:4px;padding:16px;margin:16px 0;">
+    ${opts.reason ? `<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:4px;padding:16px;margin:16px 0;">
       <p style="margin:0 0 4px;font-size:13px;color:#888;">Motivo informado pelo gestor:</p>
       <p style="margin:0;color:#444;font-size:14px;">${opts.reason}</p>
-    </div>
+    </div>` : ''}
     <p style="color:#444;line-height:1.6;margin:16px 0;">
       Você pode corrigir os dados e enviar uma nova solicitação.
     </p>
