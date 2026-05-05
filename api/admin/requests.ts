@@ -17,15 +17,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Busca solicitações pendentes de todos os domínios do gestor
-  const domainFilter = session.domains
-    .map((d) => `requester_email.ilike.%@${d}`)
-    .join(',')
-
   const { data, error } = await supabase
     .from('requests')
     .select('id, requester_name, requester_email, type, signature_items, status, created_at')
     .eq('status', 'awaiting_approval')
-    .or(domainFilter)
+    .in('company_domain', session.domains)
     .order('created_at', { ascending: false })
 
   if (error) {

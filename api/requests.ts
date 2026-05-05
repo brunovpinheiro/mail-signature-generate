@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { supabase } from './_lib/supabase.js'
 import { generateToken, hashSignatureItems } from './_lib/crypto.js'
-import { getApproversForRequester } from './_lib/approvers.js'
+import { getApproversForDomain } from './_lib/approvers.js'
 import type { SignatureItem, RequestType } from './_lib/types.js'
 
 function isValidEmail(email: string): boolean {
@@ -42,11 +42,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const normalizedEmail = requesterEmail.trim().toLowerCase()
+    const resolvedDomain = companyDomain?.trim().toLowerCase() ?? normalizedEmail.split('@')[1]
 
-    // ── Busca aprovadores da empresa do solicitante ─────────────────────────
-    const approvers = getApproversForRequester(normalizedEmail)
+    // ── Busca aprovadores do empreendimento solicitado ──────────────────────
+    const approvers = getApproversForDomain(resolvedDomain)
     if (approvers.length === 0) {
-      console.error('[requests] No approvers configured for domain:', normalizedEmail.split('@')[1])
+      console.error('[requests] No approvers configured for domain:', resolvedDomain)
       return res.status(400).json({ error: 'Domínio de e-mail não habilitado para gerar assinaturas.' })
     }
 
@@ -59,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .insert({
         requester_name: requesterName.trim(),
         requester_email: normalizedEmail,
-        company_domain: companyDomain ?? normalizedEmail.split('@')[1],
+        company_domain: resolvedDomain,
         type,
         signature_items: signatureItems,
         data_hash: dataHash,

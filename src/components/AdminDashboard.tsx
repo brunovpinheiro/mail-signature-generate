@@ -134,7 +134,7 @@ export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-[#0b2a5b] text-white">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <h1 className="text-xl font-bold">Painel do Gestor — {companyName || '…'}</h1>
+          <h1 className="text-xl font-bold">Painel Gestor de Assinaturas</h1>
           <Button
             variant="ghost"
             size="sm"

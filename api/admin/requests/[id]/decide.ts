@@ -42,13 +42,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const row = requestRow as RequestRow
 
   // ── Verifica que a solicitação pertence a um dos domínios do gestor ──────
-  const requesterDomain = row.requester_email.split('@')[1]?.toLowerCase()
-  if (!requesterDomain || !session.domains.includes(requesterDomain)) {
+  const requestDomain = (row.company_domain ?? row.requester_email.split('@')[1])?.toLowerCase()
+  if (!requestDomain || !session.domains.includes(requestDomain)) {
     await supabase.from('audit_logs').insert({
       request_id: requestId,
       event: 'unauthorized_attempt',
       actor_email: session.email,
-      metadata: { reason: 'domain_mismatch', manager_domains: session.domains, requester_domain: requesterDomain },
+      metadata: { reason: 'domain_mismatch', manager_domains: session.domains, request_domain: requestDomain },
     })
     return res.status(403).json({ error: 'Acesso não autorizado a esta solicitação.' })
   }
@@ -105,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     metadata: action === 'reject' ? { reason, source: 'admin_panel' } : { source: 'admin_panel' },
   })
 
-  const companyName = getCompanyNameByDomain(requesterDomain ?? session.domain)
+  const companyName = getCompanyNameByDomain(requestDomain ?? session.domain)
 
   // ── Notificar solicitante ─────────────────────────────────────────────────
   if (action === 'approve') {
