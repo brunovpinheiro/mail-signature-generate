@@ -123,6 +123,14 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		defaultWebsite: "https://plazacamposgerais.com.br",
 		accentColor: "#8B905A",
 	},
+	{
+		domain: "shoppingpalladium.com.br",
+		name: "Shopping Palladium",
+		templateId: "shopping",
+		logoUrl: "/logos/palladium-curitiba.png",
+		defaultWebsite: "https://shoppingpalladium.com.br",
+		accentColor: "#3797AF",
+	},
 ];
 
 /** Extrai o domínio de um endereço de e-mail. */

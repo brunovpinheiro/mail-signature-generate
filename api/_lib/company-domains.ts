@@ -7,7 +7,7 @@ const COMPANY_NAMES: Record<string, string> = {
 	"palladiumcuritiba.com.br": "Palladium Curitiba",
 	"palladiumumuarama.com.br": "Palladium Umuarama",
 	"palladiumpontagrossa.com.br": "Palladium Ponta Grossa",
-	"shoppingpalladium.com.br": "Palladium",
+	"shoppingpalladium.com.br": "Shopping Palladium",
 	"catuaipalladium.com.br": "Catuaí Palladium",
 	"itajaishopping.com.br": "Itajaí Shopping",
 	"outletportobelo.com.br": "Outlet Porto Belo",
