@@ -135,18 +135,6 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
     })
   }
 
-  // ── Proteção anti-auto-aprovação ─────────────────────────────────────────
-  if (tokenRow.manager_email.toLowerCase() === requestRow.requester_email.toLowerCase()) {
-    await supabase.from('audit_logs').insert({
-      request_id: requestRow.id,
-      event: 'self_approval_attempt',
-      actor_email: tokenRow.manager_email,
-    })
-    return res.status(403).json({
-      error: 'Auto-aprovação não permitida.',
-    })
-  }
-
   const decidedAt = new Date().toISOString()
   const newStatus = action === 'approve' ? 'approved' : 'rejected'
 

@@ -19,16 +19,19 @@ function getSecret(): string {
 interface TokenPayload {
   email: string
   domain: string
+  domains: string[]
   iat: number
   exp: number
 }
 
 /** Gera um token de sessão HMAC-SHA256 para o gestor. */
-export function signAdminToken(email: string, domain: string): string {
+export function signAdminToken(email: string, domains: string[]): string {
   const now = Math.floor(Date.now() / 1000)
+  const normalizedDomains = domains.map((d) => d.toLowerCase())
   const payload: TokenPayload = {
     email: email.toLowerCase(),
-    domain: domain.toLowerCase(),
+    domain: normalizedDomains[0] ?? '',
+    domains: normalizedDomains,
     iat: now,
     exp: now + SESSION_HOURS * 3600,
   }
@@ -56,6 +59,11 @@ export function verifyAdminToken(token: string): TokenPayload {
   const payload = JSON.parse(parseB64url(body)) as TokenPayload
   if (Math.floor(Date.now() / 1000) > payload.exp) {
     throw new Error('Sessão expirada')
+  }
+
+  // Compatibilidade com tokens antigos que não têm o campo `domains`
+  if (!payload.domains || payload.domains.length === 0) {
+    payload.domains = payload.domain ? [payload.domain] : []
   }
 
   return payload

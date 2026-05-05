@@ -16,12 +16,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: (err as Error).message })
   }
 
-  // Busca solicitações pendentes do domínio do gestor
+  // Busca solicitações pendentes de todos os domínios do gestor
+  const domainFilter = session.domains
+    .map((d) => `requester_email.ilike.%@${d}`)
+    .join(',')
+
   const { data, error } = await supabase
     .from('requests')
     .select('id, requester_name, requester_email, type, signature_items, status, created_at')
     .eq('status', 'awaiting_approval')
-    .ilike('requester_email', `%@${session.domain}`)
+    .or(domainFilter)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -34,11 +38,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'id' | 'requester_name' | 'requester_email' | 'type' | 'signature_items' | 'status' | 'created_at'
   >[]
 
-  const companyName = getCompanyNameByDomain(session.domain)
+  const companyName = session.domains.map(getCompanyNameByDomain).filter(Boolean).join(', ')
 
   return res.status(200).json({
     companyName,
     domain: session.domain,
+    domains: session.domains,
     requests: rows.map((r) => ({
       id: r.id,
       requesterName: r.requester_name,

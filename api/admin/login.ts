@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { signAdminToken } from '../_lib/admin-auth.js'
-import { getManagerDomain } from '../_lib/approvers.js'
+import { getManagerDomains } from '../_lib/approvers.js'
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -33,12 +33,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Verifica se o e-mail está cadastrado como aprovador de alguma empresa
   const normalizedEmail = email.trim().toLowerCase()
-  const domain = getManagerDomain(normalizedEmail)
+  const domains = getManagerDomains(normalizedEmail)
 
-  if (!domain) {
+  if (domains.length === 0) {
     return res.status(403).json({ error: 'E-mail não autorizado como gestor.' })
   }
 
-  const token = signAdminToken(normalizedEmail, domain)
-  return res.status(200).json({ token, domain })
+  const token = signAdminToken(normalizedEmail, domains)
+  return res.status(200).json({ token, domain: domains[0], domains })
 }

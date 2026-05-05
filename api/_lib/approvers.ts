@@ -57,9 +57,17 @@ export function isApprover(email: string): boolean {
  * ou null se o e-mail não estiver cadastrado.
  */
 export function getManagerDomain(managerEmail: string): string | null {
+  const domains = getManagerDomains(managerEmail)
+  return domains[0] ?? null
+}
+
+/**
+ * Retorna todos os domínios nos quais o gestor é aprovador.
+ * Um mesmo e-mail pode ser aprovador em múltiplos shoppings.
+ */
+export function getManagerDomains(managerEmail: string): string[] {
   const normalized = managerEmail.toLowerCase()
-  for (const [domain, list] of Object.entries(getCompanyApprovers())) {
-    if (list.includes(normalized)) return domain
-  }
-  return null
+  return Object.entries(getCompanyApprovers())
+    .filter(([, list]) => list.includes(normalized))
+    .map(([domain]) => domain)
 }
