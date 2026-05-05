@@ -28,7 +28,6 @@ function formatDate(iso: string): string {
 export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [companyName, setCompanyName] = useState('')
   const [companyDomain, setCompanyDomain] = useState('')
   const [requests, setRequests] = useState<AdminRequest[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -43,7 +42,6 @@ export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
     setSelected(new Set())
     try {
       const data = await getAdminRequests(token)
-      setCompanyName(data.companyName)
       setCompanyDomain(data.domain)
       setRequests(data.requests)
     } catch (err) {
