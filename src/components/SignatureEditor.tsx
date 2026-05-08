@@ -11,6 +11,11 @@ function isValidEmail(value: string): boolean {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function isAllCaps(value: string): boolean {
+	const letters = value.replace(/[^a-zA-ZÀ-ÿ]/g, "");
+	return letters.length >= 4 && letters === letters.toUpperCase();
+}
+
 function formatPhone(value: string): string {
 	const digits = value.replace(/\D/g, "").slice(0, 11);
 	if (digits.length <= 2) return digits.length ? `(${digits}` : "";
@@ -71,10 +76,12 @@ export function SignatureEditor({ data, onChange, selectedCompanyDomain, onCompa
 						<div className="space-y-2">
 							<Label htmlFor="name">Nome *</Label>
 							<Input id="name" placeholder="Seu nome completo" value={data.name} onChange={(e) => onChange({ name: e.target.value })} />
+							{isAllCaps(data.name) && <p className="text-sm text-amber-600">Textos em caixa alta serão reprovados.</p>}
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="jobTitle">Cargo *</Label>
 							<Input id="jobTitle" placeholder="Seu cargo" value={data.jobTitle} onChange={(e) => onChange({ jobTitle: e.target.value })} />
+							{isAllCaps(data.jobTitle) && <p className="text-sm text-amber-600">Textos em caixa alta serão reprovados.</p>}
 						</div>
 					</div>
 				</div>
