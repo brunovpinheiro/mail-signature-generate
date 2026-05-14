@@ -26,6 +26,8 @@ dist-ssr
 
 # Environment variables and sensitive data
 .env*.local
+.env.local.local
+.env.local.remote
 .env
 config/approvers.json
 config/company-approvers.json
