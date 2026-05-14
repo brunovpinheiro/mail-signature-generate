@@ -1,10 +1,5 @@
--- Signature Spark — Supabase Schema
--- Run this in the Supabase SQL Editor to set up the database.
-
--- Enable pgcrypto for gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Solicitações de assinatura
 CREATE TABLE requests (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   requester_name    TEXT        NOT NULL,
@@ -21,7 +16,6 @@ CREATE TABLE requests (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Tokens de aprovação (um por gestor por solicitação)
 CREATE TABLE approval_tokens (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id      UUID        NOT NULL REFERENCES requests(id),
@@ -33,7 +27,6 @@ CREATE TABLE approval_tokens (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Log de auditoria
 CREATE TABLE audit_logs (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   request_id  UUID        REFERENCES requests(id),
@@ -43,13 +36,6 @@ CREATE TABLE audit_logs (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Habilitar RLS: acesso direto via anon key bloqueado por padrão (sem policies = deny all).
--- O app usa service_role key, que ignora RLS — nenhuma funcionalidade é afetada.
-ALTER TABLE requests        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE approval_tokens ENABLE ROW LEVEL SECURITY;
-ALTER TABLE audit_logs      ENABLE ROW LEVEL SECURITY;
-
--- Índices para buscas comuns
 CREATE INDEX idx_approval_tokens_token      ON approval_tokens(token);
 CREATE INDEX idx_approval_tokens_request_id ON approval_tokens(request_id);
 CREATE INDEX idx_audit_logs_request_id      ON audit_logs(request_id);
