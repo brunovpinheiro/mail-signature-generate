@@ -7,6 +7,7 @@ interface UseSignatureEditorOptions {
 	logoUrl?: string;
 	defaultWebsite?: string;
 	accentColor?: string;
+	adminLogo?: { url: string; width: number; height: number };
 }
 
 interface UseSignatureEditorReturn {
@@ -17,7 +18,7 @@ interface UseSignatureEditorReturn {
 }
 
 export function useSignatureEditor(options: UseSignatureEditorOptions = {}): UseSignatureEditorReturn {
-	const { templateId = DEFAULT_TEMPLATE_ID, logoUrl, defaultWebsite = "https://taclashopping.com.br", accentColor } = options;
+	const { templateId = DEFAULT_TEMPLATE_ID, logoUrl, defaultWebsite = "https://taclashopping.com.br", accentColor, adminLogo } = options;
 
 	const [signatureData, setSignatureDataState] = useState<SignatureData>(() => ({
 		name: "",
@@ -50,9 +51,9 @@ export function useSignatureEditor(options: UseSignatureEditorOptions = {}): Use
 		}
 		const template = getTemplateById(templateId);
 		if (template) {
-			setGeneratedHtml(template.render(signatureData, logoUrl, accentColor));
+			setGeneratedHtml(template.render(signatureData, logoUrl, accentColor, adminLogo));
 		}
-	}, [signatureData, isValid, templateId, logoUrl, accentColor]);
+	}, [signatureData, isValid, templateId, logoUrl, accentColor, adminLogo]);
 
 	return {
 		signatureData,

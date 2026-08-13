@@ -159,7 +159,7 @@ export function BulkGenerator() {
 						<>
 							<Separator />
 
-							<BulkPreviewGrid items={items} template={template} logoUrl={companyConfig?.logoUrl} accentColor={companyConfig?.accentColor} />
+							<BulkPreviewGrid items={items} template={template} logoUrl={companyConfig?.logoUrl} accentColor={companyConfig?.accentColor} adminLogo={companyConfig?.adminLogo} />
 
 							{/* Actions */}
 							<div className="space-y-3">

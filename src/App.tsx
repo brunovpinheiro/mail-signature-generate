@@ -53,6 +53,7 @@ function MainApp() {
 		logoUrl: selectedCompany?.logoUrl,
 		defaultWebsite: selectedCompany?.defaultWebsite,
 		accentColor: selectedCompany?.accentColor,
+		adminLogo: selectedCompany?.adminLogo,
 	});
 	const { exportConfig, setExportConfig } = useExport();
 	const [isSubmitting, setIsSubmitting] = useState(false);

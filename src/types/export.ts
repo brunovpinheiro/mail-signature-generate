@@ -11,6 +11,7 @@ export interface BulkExportConfig extends ExportConfig {
   templateId: string
   logoUrl?: string
   accentColor?: string
+  adminLogo?: { url: string; width: number; height: number }
 }
 
 export interface BulkSignatureItem {

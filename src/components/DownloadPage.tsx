@@ -34,13 +34,14 @@ export function DownloadPage() {
 		if (!template) return;
 		const logoUrl = company?.logoUrl;
 		const accentColor = company?.accentColor;
+		const adminLogo = company?.adminLogo;
 		const width = template.defaultWidth;
 
 		setGenerating(true);
 		try {
 			if (data.type === "single") {
 				const item = data.signatureItems[0];
-				const html = template.render(item, logoUrl, accentColor);
+				const html = template.render(item, logoUrl, accentColor, adminLogo);
 				const dataUrl = await renderHtmlToImage(html, { width, format: "png" });
 				const filename = `${sanitizeFilename(item.name || "assinatura")}.png`;
 				downloadDataUrl(dataUrl, filename);
@@ -49,7 +50,7 @@ export function DownloadPage() {
 				const images = [];
 				for (let i = 0; i < data.signatureItems.length; i++) {
 					const item = data.signatureItems[i];
-					const html = template.render(item, logoUrl, accentColor);
+					const html = template.render(item, logoUrl, accentColor, adminLogo);
 					const dataUrl = await renderHtmlToImage(html, { width, format: "png" });
 					images.push({ name: item.name, dataUrl, index: i });
 				}
@@ -124,6 +125,7 @@ export function DownloadPage() {
 	const template = getTemplateById(company?.templateId ?? DEFAULT_TEMPLATE_ID);
 	const logoUrl = company?.logoUrl;
 	const accentColor = company?.accentColor;
+	const adminLogo = company?.adminLogo;
 	const typeLabel = data.type === "single" ? "individual" : `em massa (${data.signatureItems!.length} assinaturas)`;
 
 	return (
@@ -142,7 +144,7 @@ export function DownloadPage() {
 						{data.signatureItems!.map((item: SignatureData, i: number) => (
 							<div key={i} className="rounded-md border bg-white p-4">
 								{data.type === "bulk" && <p className="text-xs text-muted-foreground mb-2 font-medium">{item.name}</p>}
-								{template && <div className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: template.render(item, logoUrl, accentColor) }} />}
+								{template && <div className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: template.render(item, logoUrl, accentColor, adminLogo) }} />}
 							</div>
 						))}
 

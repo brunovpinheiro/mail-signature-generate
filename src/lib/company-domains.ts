@@ -11,6 +11,8 @@ export interface CompanyConfig {
 	defaultWebsite: string;
 	/** Cor de destaque usada no template shopping (cargo, borda inferior) */
 	accentColor?: string;
+	/** Logo da administração no rodapé do template shopping. Default: Tacla 95.93×32.34 */
+	adminLogo?: { url: string; width: number; height: number };
 }
 
 /**
@@ -58,6 +60,7 @@ export const COMPANY_DOMAINS: CompanyConfig[] = [
 		logoUrl: "/logos/catuai-palladium.png",
 		defaultWebsite: "https://catuaipalladium.com.br",
 		accentColor: "#2C85A0",
+		adminLogo: { url: "/logo-catuai-admin.png", width: 201, height: 40 },
 	},
 	{
 		domain: "itajaishopping.com.br",

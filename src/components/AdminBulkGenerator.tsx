@@ -125,7 +125,7 @@ export function AdminBulkGenerator({ token, companyDomain }: AdminBulkGeneratorP
           {items.length > 0 && (
             <>
               <Separator />
-              <BulkPreviewGrid items={items} template={template} logoUrl={companyConfig?.logoUrl} accentColor={companyConfig?.accentColor} />
+              <BulkPreviewGrid items={items} template={template} logoUrl={companyConfig?.logoUrl} accentColor={companyConfig?.accentColor} adminLogo={companyConfig?.adminLogo} />
               <div className="space-y-3">
                 <div className="flex gap-3">
                   <Button

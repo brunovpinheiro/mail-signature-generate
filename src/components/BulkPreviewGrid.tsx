@@ -9,16 +9,17 @@ interface BulkPreviewGridProps {
 	template: TemplateDefinition | undefined;
 	logoUrl?: string;
 	accentColor?: string;
+	adminLogo?: { url: string; width: number; height: number };
 }
 
-export function BulkPreviewGrid({ items, template, logoUrl, accentColor }: BulkPreviewGridProps) {
+export function BulkPreviewGrid({ items, template, logoUrl, accentColor, adminLogo }: BulkPreviewGridProps) {
 	const previews = useMemo(() => {
 		if (!template) return [];
 		return items.map((item) => ({
 			...item,
-			html: template.render(item.data, logoUrl, accentColor),
+			html: template.render(item.data, logoUrl, accentColor, adminLogo),
 		}));
-	}, [items, template, logoUrl, accentColor]);
+	}, [items, template, logoUrl, accentColor, adminLogo]);
 
 	if (previews.length === 0) return null;
 

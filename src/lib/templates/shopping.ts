@@ -1,9 +1,13 @@
 import type { SignatureData } from "@/types/signature";
 import type { TemplateDefinition } from "./index";
 
-function render(data: SignatureData, logoUrl?: string, accentColor?: string): string {
+function render(data: SignatureData, logoUrl?: string, accentColor?: string, adminLogo?: { url: string; width: number; height: number }): string {
 	const color = accentColor ?? "#a17e3e";
 	const resolvedLogo = logoUrl ?? "/logos/palladium-curitiba.png";
+	const admin = adminLogo ?? { url: "/logo-tacla-small.png", width: 95.93, height: 32.34 };
+	const adminBoxWidth = Math.max(admin.width, 96);
+	const adminBoxHeight = Math.max(admin.height, 40.42);
+	const adminTopOffset = (adminBoxHeight - admin.height) / 2;
 
 	const mobileRow = data.mobile
 		? `<div style="display: flex; flex-direction: row; gap: 6px; align-items: center; justify-content: flex-start; flex-shrink: 0; position: relative">
@@ -62,8 +66,8 @@ function render(data: SignatureData, logoUrl?: string, accentColor?: string): st
     </div>
     <div style="border-width: 0px 0px 0px 1px; border-style: solid; border-image: linear-gradient(180deg, rgba(255, 255, 255, 0) 15%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 85%); border-image-slice: 1; padding: 0px 32px 0px 32px; display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; align-self: stretch; flex-shrink: 0; position: relative">
       <div style="color: #7f7f7f; text-align: left; font-family: Inter-Regular, sans-serif; font-size: 10px; line-height: 16px; letter-spacing: 0.5px; font-weight: 400; position: relative">Administração</div>
-      <div style="flex-shrink: 0; width: 96px; height: 40.42px; position: relative; aspect-ratio: 96/40.42">
-        <img style="width: 95.93px; height: 32.34px; position: absolute; right: 0px; top: calc(50% - 12.13px); overflow: visible; aspect-ratio: 95.93/32.34" src="/logo-tacla-small.png" />
+      <div style="flex-shrink: 0; width: ${adminBoxWidth}px; height: ${adminBoxHeight}px; position: relative; aspect-ratio: ${adminBoxWidth}/${adminBoxHeight}">
+        <img style="width: ${admin.width}px; height: ${admin.height}px; position: absolute; right: 0px; top: ${adminTopOffset}px; overflow: visible; aspect-ratio: ${admin.width}/${admin.height}" src="${admin.url}" />
       </div>
     </div>
   </div>

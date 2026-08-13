@@ -8,7 +8,7 @@ export interface TemplateDefinition {
   description: string
   defaultWidth: number
   /** logoUrl sobrescreve o logo padrão; se omitido usa o fallback do template */
-  render: (data: SignatureData, logoUrl?: string, accentColor?: string) => string
+  render: (data: SignatureData, logoUrl?: string, accentColor?: string, adminLogo?: { url: string; width: number; height: number }) => string
 }
 
 export const TEMPLATES: TemplateDefinition[] = [defaultTemplate, shoppingTemplate]

@@ -52,7 +52,7 @@ export function useBulkGenerator(): UseBulkGeneratorReturn {
       const images = await generateBulkImages(
         items,
         config,
-        (data) => template.render(data, config.logoUrl, config.accentColor),
+        (data) => template.render(data, config.logoUrl, config.accentColor, config.adminLogo),
         (percent) => setProgress(percent)
       )
 

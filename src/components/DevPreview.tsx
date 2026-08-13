@@ -27,7 +27,7 @@ export function DevPreview() {
 
 	const company = getCompanyByDomain(domain);
 	const template = getTemplateById(company?.templateId ?? "default");
-	const html = template ? template.render(data, company?.logoUrl, company?.accentColor) : "";
+	const html = template ? template.render(data, company?.logoUrl, company?.accentColor, company?.adminLogo) : "";
 
 	async function handleGeneratePng() {
 		if (!html) return;
