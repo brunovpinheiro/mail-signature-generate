@@ -6,8 +6,7 @@ import { Loader2, Download, AlertCircle, Clock, CheckCircle2 } from "lucide-reac
 import { getDownloadRequest } from "@/lib/api";
 import { getTemplateById, DEFAULT_TEMPLATE_ID } from "@/lib/templates";
 import { getCompanyByDomain } from "@/lib/company-domains";
-import { renderHtmlToImage } from "@/lib/image-utils";
-import { downloadDataUrl, downloadImagesAsZip, sanitizeFilename } from "@/lib/export-utils";
+import { downloadSignatureRequest } from "@/lib/signature-download";
 import { toast } from "sonner";
 import type { DownloadRequestData } from "@/types/approval";
 import type { SignatureData } from "@/types/signature";
@@ -29,34 +28,10 @@ export function DownloadPage() {
 
 	const handleDownload = useCallback(async () => {
 		if (!data?.signatureItems) return;
-		const company = getCompanyByDomain(data.companyDomain ?? "");
-		const template = getTemplateById(company?.templateId ?? DEFAULT_TEMPLATE_ID);
-		if (!template) return;
-		const logoUrl = company?.logoUrl;
-		const accentColor = company?.accentColor;
-		const adminLogo = company?.adminLogo;
-		const width = template.defaultWidth;
-
 		setGenerating(true);
 		try {
-			if (data.type === "single") {
-				const item = data.signatureItems[0];
-				const html = template.render(item, logoUrl, accentColor, adminLogo);
-				const dataUrl = await renderHtmlToImage(html, { width, format: "png" });
-				const filename = `${sanitizeFilename(item.name || "assinatura")}.png`;
-				downloadDataUrl(dataUrl, filename);
-				toast.success("Download iniciado!");
-			} else {
-				const images = [];
-				for (let i = 0; i < data.signatureItems.length; i++) {
-					const item = data.signatureItems[i];
-					const html = template.render(item, logoUrl, accentColor, adminLogo);
-					const dataUrl = await renderHtmlToImage(html, { width, format: "png" });
-					images.push({ name: item.name, dataUrl, index: i });
-				}
-				await downloadImagesAsZip(images, "png");
-				toast.success("Download do ZIP iniciado!");
-			}
+			await downloadSignatureRequest(data);
+			toast.success(data.type === "bulk" ? "Download do ZIP iniciado!" : "Download iniciado!");
 		} catch {
 			toast.error("Erro ao gerar imagem. Tente novamente.");
 		} finally {

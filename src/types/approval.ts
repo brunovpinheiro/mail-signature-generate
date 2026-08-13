@@ -36,6 +36,19 @@ export interface ApprovalAlreadyDecided {
 
 export type ApprovalTokenResponse = ApprovalTokenView | ApprovalAlreadyDecided
 
+/** Resumo de uma solicitação na aba "Minhas solicitações" — sem os dados da assinatura. */
+export interface MyRequestSummary {
+  id: string
+  type: RequestType
+  requesterName: string
+  companyDomain: string | null
+  status: RequestStatus
+  itemCount: number
+  decisionReason: string | null
+  decidedAt: string | null
+  createdAt: string
+}
+
 export interface DownloadRequestData {
   id: string
   type: RequestType

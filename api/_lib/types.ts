@@ -47,3 +47,12 @@ export type AuditEvent =
   | 'token_expired'
   | 'token_already_used'
   | 'request_already_decided'
+  // Envio aceito pelo Resend (não é garantia de entrega)
+  | 'email_sent'
+  // Resend recusou o envio na hora da chamada
+  | 'email_failed'
+  // Chegou depois, via webhook do Resend
+  | 'email_bounced'
+  | 'email_complained'
+  // Destinatário na lista de supressão — descartado sem tentativa de entrega
+  | 'email_suppressed'

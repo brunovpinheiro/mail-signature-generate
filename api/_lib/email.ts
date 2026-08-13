@@ -1,9 +1,78 @@
 import { Resend } from "resend";
+import { supabase } from "./supabase.js";
 import type { SignatureItem, RequestType } from "./types.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Tacla Shopping <no-reply@taclashopping.com.br>";
 const APP_URL = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
+/** Identifica cada tipo de e-mail no audit_logs. */
+type EmailKind =
+	| "manager_approval"
+	| "requester_confirmation"
+	| "requester_approved"
+	| "requester_rejected"
+	| "weekly_digest";
+
+export interface EmailResult {
+	/** true = o Resend aceitou o envio. Não garante entrega — bounce é assíncrono. */
+	accepted: boolean;
+	emailId?: string;
+	error?: string;
+}
+
+/**
+ * Envia pelo Resend, registra o resultado no audit_logs e devolve o status.
+ *
+ * O SDK do Resend NÃO lança exceção em falha: devolve `{ data, error }`. Sem
+ * checar esse retorno, uma recusa (rate limit, destinatário suprimido,
+ * validação) passava despercebida e a solicitação ficava aprovada sem que
+ * ninguém recebesse nada.
+ *
+ * `accepted: true` significa apenas que o Resend aceitou a mensagem. Bounces
+ * chegam depois, de forma assíncrona — quem registra esses é o webhook em
+ * api/webhooks/resend.ts.
+ */
+async function deliver(
+	kind: EmailKind,
+	requestId: string | null,
+	to: string,
+	subject: string,
+	html: string,
+): Promise<EmailResult> {
+	let result: EmailResult;
+
+	try {
+		const { data, error } = await resend.emails.send({ from: FROM, to, subject, html });
+
+		result = error
+			? { accepted: false, error: `${error.name}: ${error.message}` }
+			: { accepted: true, emailId: data?.id };
+	} catch (err) {
+		// Falha de rede/timeout antes de chegar ao Resend
+		result = { accepted: false, error: err instanceof Error ? err.message : String(err) };
+	}
+
+	if (!result.accepted) {
+		console.error(`[email] Falha ao enviar (${kind}) para ${to}:`, result.error);
+	}
+
+	// O log nunca pode derrubar o fluxo da decisão que já foi gravada
+	try {
+		await supabase.from("audit_logs").insert({
+			request_id: requestId,
+			event: result.accepted ? "email_sent" : "email_failed",
+			actor_email: to,
+			metadata: result.accepted
+				? { kind, resend_id: result.emailId }
+				: { kind, error: result.error },
+		});
+	} catch (err) {
+		console.error("[email] Falha ao registrar audit_log:", err);
+	}
+
+	return result;
+}
 
 function formatDate(iso: string): string {
 	return new Date(iso).toLocaleString("pt-BR", {
@@ -68,7 +137,7 @@ function signatureItemsSummary(items: SignatureItem[], type: RequestType): strin
 
 // ─── Manager: link de aprovação ───────────────────────────────────────────────
 
-export async function sendManagerApprovalEmail(opts: { managerEmail: string; requesterName: string; requesterEmail: string; companyName?: string; type: RequestType; signatureItems: SignatureItem[]; token: string; createdAt: string }): Promise<void> {
+export async function sendManagerApprovalEmail(opts: { managerEmail: string; requesterName: string; requesterEmail: string; companyName?: string; type: RequestType; signatureItems: SignatureItem[]; token: string; createdAt: string; requestId?: string }): Promise<EmailResult> {
 	const approvalUrl = `${APP_URL}/approve/${opts.token}`;
 	const typeLabel = opts.type === "single" ? "Individual" : `Em Massa (${opts.signatureItems.length} assinaturas)`;
 	const companyLabel = opts.companyName ?? "Tacla Shopping";
@@ -97,17 +166,18 @@ export async function sendManagerApprovalEmail(opts: { managerEmail: string; req
       Não repasse este e-mail.
     </p>`;
 
-	await resend.emails.send({
-		from: FROM,
-		to: opts.managerEmail,
-		subject: `[${companyLabel}] Solicitação de assinatura aguardando aprovação`,
-		html: wrapEmail(body),
-	});
+	return deliver(
+		"manager_approval",
+		opts.requestId ?? null,
+		opts.managerEmail,
+		`[${companyLabel}] Solicitação de assinatura aguardando aprovação`,
+		wrapEmail(body),
+	);
 }
 
 // ─── Solicitante: confirmação de envio ────────────────────────────────────────
 
-export async function sendRequesterConfirmationEmail(opts: { requesterName: string; requesterEmail: string; companyName?: string; type: RequestType; count: number }): Promise<void> {
+export async function sendRequesterConfirmationEmail(opts: { requesterName: string; requesterEmail: string; companyName?: string; type: RequestType; count: number; requestId?: string }): Promise<EmailResult> {
 	const typeLabel = opts.type === "single" ? "individual" : `em massa (${opts.count} assinaturas)`;
 	const companyLabel = opts.companyName ?? "Tacla Shopping";
 
@@ -128,17 +198,18 @@ export async function sendRequesterConfirmationEmail(opts: { requesterName: stri
       Caso não receba uma resposta em 72 horas, entre em contato com o seu gestor.
     </p>`;
 
-	await resend.emails.send({
-		from: FROM,
-		to: opts.requesterEmail,
-		subject: `[${companyLabel}] Solicitação de assinatura enviada para aprovação`,
-		html: wrapEmail(body),
-	});
+	return deliver(
+		"requester_confirmation",
+		opts.requestId ?? null,
+		opts.requesterEmail,
+		`[${companyLabel}] Solicitação de assinatura enviada para aprovação`,
+		wrapEmail(body),
+	);
 }
 
 // ─── Solicitante: aprovação ────────────────────────────────────────────────────
 
-export async function sendRequesterApprovedEmail(opts: { requesterName: string; requesterEmail: string; requestId: string; decidedBy: string; companyName?: string }): Promise<void> {
+export async function sendRequesterApprovedEmail(opts: { requesterName: string; requesterEmail: string; requestId: string; decidedBy: string; companyName?: string }): Promise<EmailResult> {
 	const downloadUrl = `${APP_URL}/download/${opts.requestId}`;
 	const companyLabel = opts.companyName ?? "Tacla Shopping";
 
@@ -163,17 +234,18 @@ export async function sendRequesterApprovedEmail(opts: { requesterName: string; 
       O link acima é exclusivo para a sua solicitação aprovada.
     </p>`;
 
-	await resend.emails.send({
-		from: FROM,
-		to: opts.requesterEmail,
-		subject: `[${companyLabel}] Sua assinatura foi aprovada ✓`,
-		html: wrapEmail(body),
-	});
+	return deliver(
+		"requester_approved",
+		opts.requestId,
+		opts.requesterEmail,
+		`[${companyLabel}] Sua assinatura foi aprovada ✓`,
+		wrapEmail(body),
+	);
 }
 
 // ─── Gestor: resumo semanal de pendências ─────────────────────────────────
 
-export async function sendWeeklyDigestEmail(opts: { managerEmail: string; companyName: string; pendingCount: number }): Promise<void> {
+export async function sendWeeklyDigestEmail(opts: { managerEmail: string; companyName: string; pendingCount: number }): Promise<EmailResult> {
 	const adminUrl = `${APP_URL}/admin`;
 	const companyLabel = opts.companyName;
 
@@ -192,17 +264,19 @@ export async function sendWeeklyDigestEmail(opts: { managerEmail: string; compan
       Este é um resumo automático enviado toda segunda-feira.
     </p>`;
 
-	await resend.emails.send({
-		from: FROM,
-		to: opts.managerEmail,
-		subject: `[${companyLabel}] ${opts.pendingCount} solicitação(ões) aguardando aprovação`,
-		html: wrapEmail(body),
-	});
+	// Resumo semanal não pertence a uma solicitação específica
+	return deliver(
+		"weekly_digest",
+		null,
+		opts.managerEmail,
+		`[${companyLabel}] ${opts.pendingCount} solicitação(ões) aguardando aprovação`,
+		wrapEmail(body),
+	);
 }
 
 // ─── Solicitante: reprovação ──────────────────────────────────────────────────
 
-export async function sendRequesterRejectedEmail(opts: { requesterName: string; requesterEmail: string; reason: string; companyName?: string }): Promise<void> {
+export async function sendRequesterRejectedEmail(opts: { requesterName: string; requesterEmail: string; reason: string; companyName?: string; requestId?: string }): Promise<EmailResult> {
 	const companyLabelRej = opts.companyName ?? "Tacla Shopping";
 
 	const body = `
@@ -227,10 +301,11 @@ export async function sendRequesterRejectedEmail(opts: { requesterName: string; 
       </a>
     </div>`;
 
-	await resend.emails.send({
-		from: FROM,
-		to: opts.requesterEmail,
-		subject: `[${companyLabelRej}] Solicitação de assinatura reprovada`,
-		html: wrapEmail(body),
-	});
+	return deliver(
+		"requester_rejected",
+		opts.requestId ?? null,
+		opts.requesterEmail,
+		`[${companyLabelRej}] Solicitação de assinatura reprovada`,
+		wrapEmail(body),
+	);
 }

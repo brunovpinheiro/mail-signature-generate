@@ -5,8 +5,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, LogOut, RefreshCw, InboxIcon, CheckCheck, Check, X } from 'lucide-react'
 import { getAdminRequests, adminDecide } from '@/lib/api'
-import type { AdminRequest } from '@/lib/api'
+import type { AdminRequest, AdminDecideResult } from '@/lib/api'
 import { AdminBulkGenerator } from './AdminBulkGenerator'
+import { RejectReasonDialog } from './RejectReasonDialog'
 import { toast } from 'sonner'
 
 interface AdminDashboardProps {
@@ -35,6 +36,8 @@ export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
   const [rejecting, setRejecting] = useState(false)
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
+  // null = dialog fechado | 'selected' = reprovar a seleção | <id> = uma solicitação
+  const [rejectTarget, setRejectTarget] = useState<string | 'selected' | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -72,6 +75,27 @@ export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
     setSelected(allSelected ? new Set() : new Set(requests.map(r => r.id)))
   }
 
+  /**
+   * A decisão pode ser gravada com sucesso e o e-mail falhar — foi assim que
+   * assinaturas aprovadas nunca chegaram ao solicitante. Avisa o gestor para
+   * que ele repasse o caso em vez de assumir que a pessoa foi notificada.
+   */
+  function warnUndelivered(results: PromiseSettledResult<AdminDecideResult>[]) {
+    const undelivered = results
+      .filter((r): r is PromiseFulfilledResult<AdminDecideResult> => r.status === 'fulfilled')
+      .filter(r => !r.value.emailAccepted)
+
+    if (undelivered.length === 0) return
+
+    const who = undelivered.length === 1
+      ? undelivered[0].value.requesterEmail
+      : `${undelivered.length} solicitantes`
+
+    toast.warning(`Decisão registrada, mas o e-mail não pôde ser enviado para ${who}. Avise para acessar a aba "Minhas solicitações".`, {
+      duration: 12000,
+    })
+  }
+
   async function approveSelected() {
     if (selected.size === 0) return
     setApproving(true)
@@ -83,43 +107,42 @@ export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
     const succeeded = ids.length - failed
     if (succeeded > 0) toast.success(`${succeeded} solicitação(ões) aprovada(s).`)
     if (failed > 0) toast.error(`${failed} aprovação(ões) falharam.`)
+    warnUndelivered(results)
     setApproving(false)
     await load()
   }
 
-  async function rejectSelected() {
-    if (selected.size === 0) return
-    setRejecting(true)
-    const ids = Array.from(selected)
+  // A reprovação passa pelo dialog de motivo; `rejectTarget` guarda o alvo
+  // enquanto ele está aberto: uma solicitação específica ou a seleção inteira.
+  async function confirmReject(reason: string) {
+    const ids = rejectTarget === 'selected' ? Array.from(selected) : rejectTarget ? [rejectTarget] : []
+    if (ids.length === 0) return
+
+    const bulk = rejectTarget === 'selected'
+    if (bulk) setRejecting(true)
+    else setRejectingId(ids[0])
+
     const results = await Promise.allSettled(
-      ids.map(id => adminDecide(token, id, 'reject'))
+      ids.map(id => adminDecide(token, id, 'reject', reason))
     )
     const failed = results.filter(r => r.status === 'rejected').length
     const succeeded = ids.length - failed
     if (succeeded > 0) toast.success(`${succeeded} solicitação(ões) reprovada(s).`)
     if (failed > 0) toast.error(`${failed} reprovação(ões) falharam.`)
-    setRejecting(false)
-    await load()
-  }
+    warnUndelivered(results)
 
-  async function rejectSingle(id: string) {
-    setRejectingId(id)
-    try {
-      await adminDecide(token, id, 'reject')
-      toast.success('Solicitação reprovada.')
-      await load()
-    } catch {
-      toast.error('Falha ao reprovar a solicitação.')
-    } finally {
-      setRejectingId(null)
-    }
+    setRejecting(false)
+    setRejectingId(null)
+    setRejectTarget(null)
+    await load()
   }
 
   async function approveSingle(id: string) {
     setApprovingId(id)
     try {
-      await adminDecide(token, id, 'approve')
+      const result = await adminDecide(token, id, 'approve')
       toast.success('Solicitação aprovada.')
+      warnUndelivered([{ status: 'fulfilled', value: result }])
       await load()
     } catch {
       toast.error('Falha ao aprovar a solicitação.')
@@ -200,7 +223,7 @@ export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
                         size="sm"
                         variant="outline"
                         className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
-                        onClick={rejectSelected}
+                        onClick={() => setRejectTarget('selected')}
                         disabled={rejecting || approving}
                       >
                         {rejecting
@@ -248,7 +271,7 @@ export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
                                     size="sm"
                                     variant="outline"
                                     className="h-6 px-2 text-xs text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
-                                    onClick={() => rejectSingle(r.id)}
+                                    onClick={() => setRejectTarget(r.id)}
                                     disabled={rejectingId === r.id || approvingId === r.id || approving || rejecting}
                                   >
                                     {rejectingId === r.id
@@ -304,6 +327,13 @@ export function AdminDashboard({ token, onLogout }: AdminDashboardProps) {
         </Tabs>
       </main>
 
+      <RejectReasonDialog
+        open={rejectTarget !== null}
+        count={rejectTarget === 'selected' ? selected.size : 1}
+        submitting={rejecting || rejectingId !== null}
+        onCancel={() => setRejectTarget(null)}
+        onConfirm={confirmReject}
+      />
     </div>
   )
 }

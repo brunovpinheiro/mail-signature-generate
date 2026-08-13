@@ -3,6 +3,7 @@ import type {
   SubmitRequestResult,
   ApprovalTokenResponse,
   DownloadRequestData,
+  MyRequestSummary,
 } from '@/types/approval'
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -41,6 +42,15 @@ export async function postApprovalDecision(
     method: 'POST',
     body: JSON.stringify({ action, reason }),
   })
+}
+
+export async function listMyRequests(
+  email: string
+): Promise<MyRequestSummary[]> {
+  const body = await apiFetch<{ requests: MyRequestSummary[] }>(
+    `/api/requests?email=${encodeURIComponent(email)}`
+  )
+  return body.requests
 }
 
 export async function getDownloadRequest(
@@ -117,13 +127,22 @@ export async function submitAdminBulk(
   })
 }
 
+export interface AdminDecideResult {
+  success: boolean
+  status: 'approved' | 'rejected'
+  /** false = o Resend recusou o envio; o solicitante não foi avisado. */
+  emailAccepted: boolean
+  emailError: string | null
+  requesterEmail: string
+}
+
 export async function adminDecide(
   token: string,
   requestId: string,
   action: 'approve' | 'reject',
   reason?: string
-): Promise<void> {
-  await apiFetch(`/api/admin/requests/${requestId}/decide`, {
+): Promise<AdminDecideResult> {
+  return apiFetch<AdminDecideResult>(`/api/admin/requests/${requestId}/decide`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

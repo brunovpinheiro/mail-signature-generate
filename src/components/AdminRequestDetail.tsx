@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { adminDecide } from '@/lib/api'
 import type { AdminRequest } from '@/lib/api'
+import { RejectReasonDialog } from './RejectReasonDialog'
 
 interface LocationState {
   request: AdminRequest
@@ -28,8 +29,7 @@ export function AdminRequestDetail() {
   const { state } = useLocation() as { state: LocationState | null }
 
   const [action, setAction] = useState<'approve' | 'reject' | null>(null)
-  const [reason, setReason] = useState('')
-  const [reasonError, setReasonError] = useState(false)
+  const [rejectOpen, setRejectOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [done, setDone] = useState<'approve' | 'reject' | null>(null)
@@ -48,22 +48,22 @@ export function AdminRequestDetail() {
   const { request: r, token, companyName } = state
   const typeLabel = r.type === 'single' ? 'Individual' : `Em Massa (${r.itemCount} assinaturas)`
 
-  async function handleDecision() {
-    if (!action) return
-    if (action === 'reject' && !reason.trim()) {
-      setReasonError(true)
-      return
-    }
+  async function submitDecision(decision: 'approve' | 'reject', decisionReason?: string) {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      await adminDecide(token, r.id, action, reason.trim() || undefined)
-      setDone(action)
+      await adminDecide(token, r.id, decision, decisionReason)
+      setDone(decision)
     } catch (err) {
       setSubmitError((err as Error).message)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  async function handleReject(pickedReason: string) {
+    setRejectOpen(false)
+    await submitDecision('reject', pickedReason)
   }
 
   if (done) {
@@ -153,56 +153,37 @@ export function AdminRequestDetail() {
               </div>
             )}
 
-            {action === 'reject' && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Justificativa da reprovação <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  className={`w-full rounded-md border px-3 py-2 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-ring ${reasonError ? 'border-red-500' : ''}`}
-                  placeholder="Descreva o motivo da reprovação…"
-                  value={reason}
-                  onChange={(e) => { setReason(e.target.value); setReasonError(false) }}
-                />
-                {reasonError && <p className="text-sm text-red-500">Justificativa obrigatória.</p>}
-              </div>
-            )}
-
             <div className="flex gap-3">
-              {action !== 'reject' && (
-                <Button
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                  size="lg"
-                  onClick={() => action === 'approve' ? handleDecision() : setAction('approve')}
-                  disabled={submitting}
-                >
-                  {submitting && action === 'approve'
-                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                  {action === 'approve' ? 'Confirmar Aprovação' : 'Aprovar'}
-                </Button>
-              )}
+              <Button
+                className="flex-1 bg-green-600 hover:bg-green-700"
+                size="lg"
+                onClick={() => action === 'approve' ? submitDecision('approve') : setAction('approve')}
+                disabled={submitting}
+              >
+                {submitting && action === 'approve'
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                {action === 'approve' ? 'Confirmar Aprovação' : 'Aprovar'}
+              </Button>
 
-              {action !== 'approve' && (
-                <Button
-                  variant={action === 'reject' ? 'default' : 'outline'}
-                  className={action === 'reject' ? 'flex-1 bg-red-600 hover:bg-red-700' : 'flex-1'}
-                  size="lg"
-                  onClick={() => action === 'reject' ? handleDecision() : setAction('reject')}
-                  disabled={submitting}
-                >
-                  {submitting && action === 'reject'
-                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    : <XCircle className="mr-2 h-4 w-4" />}
-                  {action === 'reject' ? 'Confirmar Reprovação' : 'Reprovar'}
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                className="flex-1"
+                size="lg"
+                onClick={() => setRejectOpen(true)}
+                disabled={submitting}
+              >
+                {submitting && !rejectOpen && action !== 'approve'
+                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  : <XCircle className="mr-2 h-4 w-4" />}
+                Reprovar
+              </Button>
 
-              {action !== null && (
+              {action === 'approve' && (
                 <Button
                   variant="ghost"
                   size="lg"
-                  onClick={() => { setAction(null); setReason(''); setReasonError(false) }}
+                  onClick={() => setAction(null)}
                   disabled={submitting}
                 >
                   Cancelar
@@ -212,6 +193,13 @@ export function AdminRequestDetail() {
           </CardContent>
         </Card>
       </div>
+
+      <RejectReasonDialog
+        open={rejectOpen}
+        submitting={submitting}
+        onCancel={() => setRejectOpen(false)}
+        onConfirm={handleReject}
+      />
     </PageShell>
   )
 }

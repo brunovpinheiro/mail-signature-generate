@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { supabase } from '../_lib/supabase.js'
 import { isApprover } from '../_lib/approvers.js'
+import { getCompanyNameByDomain } from '../_lib/company-domains.js'
 import {
   sendRequesterApprovedEmail,
   sendRequesterRejectedEmail,
@@ -191,22 +192,34 @@ async function handlePost(req: VercelRequest, res: VercelResponse) {
   })
 
   // ── Notificar solicitante ──────────────────────────────────────────────────
-  if (action === 'approve') {
-    await sendRequesterApprovedEmail({
-      requesterName: requestRow.requester_name,
-      requesterEmail: requestRow.requester_email,
-      requestId: requestRow.id,
-      decidedBy: tokenRow.manager_email,
-    })
-  } else {
-    await sendRequesterRejectedEmail({
-      requesterName: requestRow.requester_name,
-      requesterEmail: requestRow.requester_email,
-      reason: reason!.trim(),
-    })
-  }
+  // Mesma regra do painel: a decisão já foi gravada, então uma falha de envio
+  // é reportada, nunca propagada como erro da decisão.
+  const companyName = getCompanyNameByDomain(
+    requestRow.company_domain ?? requestRow.requester_email.split('@')[1] ?? ''
+  )
 
-  return res.status(200).json({ success: true, status: newStatus })
+  const emailResult =
+    action === 'approve'
+      ? await sendRequesterApprovedEmail({
+          requesterName: requestRow.requester_name,
+          requesterEmail: requestRow.requester_email,
+          requestId: requestRow.id,
+          decidedBy: tokenRow.manager_email,
+          companyName,
+        })
+      : await sendRequesterRejectedEmail({
+          requesterName: requestRow.requester_name,
+          requesterEmail: requestRow.requester_email,
+          reason: reason!.trim(),
+          companyName,
+          requestId: requestRow.id,
+        })
+
+  return res.status(200).json({
+    success: true,
+    status: newStatus,
+    emailAccepted: emailResult.accepted,
+  })
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

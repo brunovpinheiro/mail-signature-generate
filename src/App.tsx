@@ -12,6 +12,8 @@ import { AdminLogin } from "@/components/AdminLogin";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { AdminRequestDetail } from "@/components/AdminRequestDetail";
 import { DevPreview } from "@/components/DevPreview";
+import { MyRequestsPanel } from "@/components/MyRequestsPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RequesterProvider, useRequester } from "@/context/RequesterContext";
 import { useSignatureEditor } from "@/hooks/useSignatureEditor";
 import { useExport } from "@/hooks/useExport";
@@ -91,15 +93,28 @@ function MainApp() {
 			</header>
 
 			<main className="container mx-auto px-4 py-6">
-				<div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-					<div className="space-y-6">
-						<SignatureEditor data={signatureData} onChange={setSignatureData} selectedCompanyDomain={selectedCompany?.domain} onCompanyChange={(company) => setSelectedCompany(company)} />
-						<SignaturePreview html={generatedHtml} />
-					</div>
-					<div>
-						<ExportPanel config={exportConfig} onConfigChange={setExportConfig} onSubmitForApproval={handleSubmitForApproval} isSubmitting={isSubmitting} disabled={!isValid} />
-					</div>
-				</div>
+				<Tabs defaultValue="create">
+					<TabsList className="mb-6">
+						<TabsTrigger value="create">Criar assinatura</TabsTrigger>
+						<TabsTrigger value="mine">Minhas solicitações</TabsTrigger>
+					</TabsList>
+
+					<TabsContent value="create">
+						<div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+							<div className="space-y-6">
+								<SignatureEditor data={signatureData} onChange={setSignatureData} selectedCompanyDomain={selectedCompany?.domain} onCompanyChange={(company) => setSelectedCompany(company)} />
+								<SignaturePreview html={generatedHtml} />
+							</div>
+							<div>
+								<ExportPanel config={exportConfig} onConfigChange={setExportConfig} onSubmitForApproval={handleSubmitForApproval} isSubmitting={isSubmitting} disabled={!isValid} />
+							</div>
+						</div>
+					</TabsContent>
+
+					<TabsContent value="mine">
+						<MyRequestsPanel email={requester.email} />
+					</TabsContent>
+				</Tabs>
 			</main>
 
 			<Toaster position="bottom-right" richColors />

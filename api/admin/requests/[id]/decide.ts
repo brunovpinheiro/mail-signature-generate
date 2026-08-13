@@ -27,6 +27,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!['approve', 'reject'].includes(action ?? '')) {
     return res.status(400).json({ error: 'Ação inválida.' })
   }
+  // Aprovar segue com um clique; reprovar exige motivo — é o que o solicitante
+  // recebe para saber o que corrigir.
+  if (action === 'reject' && !reason?.trim()) {
+    return res.status(400).json({ error: 'Justificativa obrigatória para reprovação.' })
+  }
 
   // ── Busca solicitação ─────────────────────────────────────────────────────
   const { data: requestRow, error: fetchError } = await supabase
@@ -108,22 +113,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const companyName = getCompanyNameByDomain(requestDomain ?? session.domain)
 
   // ── Notificar solicitante ─────────────────────────────────────────────────
-  if (action === 'approve') {
-    await sendRequesterApprovedEmail({
-      requesterName: row.requester_name,
-      requesterEmail: row.requester_email,
-      requestId,
-      decidedBy: session.email,
-      companyName,
-    })
-  } else {
-    await sendRequesterRejectedEmail({
-      requesterName: row.requester_name,
-      requesterEmail: row.requester_email,
-      reason: reason?.trim() ?? '',
-      companyName,
-    })
-  }
+  // A decisão já está gravada; uma falha de e-mail não pode desfazê-la nem
+  // virar 500. Devolvemos o status do envio para o painel avisar o gestor.
+  const emailResult =
+    action === 'approve'
+      ? await sendRequesterApprovedEmail({
+          requesterName: row.requester_name,
+          requesterEmail: row.requester_email,
+          requestId,
+          decidedBy: session.email,
+          companyName,
+        })
+      : await sendRequesterRejectedEmail({
+          requesterName: row.requester_name,
+          requesterEmail: row.requester_email,
+          reason: reason?.trim() ?? '',
+          companyName,
+          requestId,
+        })
 
-  return res.status(200).json({ success: true, status: newStatus })
+  return res.status(200).json({
+    success: true,
+    status: newStatus,
+    emailAccepted: emailResult.accepted,
+    emailError: emailResult.error ?? null,
+    requesterEmail: row.requester_email,
+  })
 }

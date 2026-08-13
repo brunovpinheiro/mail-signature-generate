@@ -15,19 +15,29 @@ export function RequesterForm() {
 	const { setRequester } = useRequester();
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
+	const [confirmEmail, setConfirmEmail] = useState("");
 	const [emailTouched, setEmailTouched] = useState(false);
+	const [confirmTouched, setConfirmTouched] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
 
 	const company = isValidEmail(email) ? getCompanyByEmail(email) : null;
 	const domainValid = isValidEmail(email) ? company !== null : true;
 	const emailFormatError = emailTouched && email !== "" && !isValidEmail(email);
 	const domainError = emailTouched && isValidEmail(email) && company === null;
-	const canSubmit = name.trim().length > 0 && isValidEmail(email) && company !== null;
+
+	// Dupla digitação: pega erro de digitação antes de virar uma solicitação
+	// que ninguém recebe. Comparação normalizada — só o conteúdo importa.
+	const emailsMatch = email.trim().toLowerCase() === confirmEmail.trim().toLowerCase();
+	const confirmError = (confirmTouched || submitted) && confirmEmail !== "" && !emailsMatch;
+	const confirmMissing = submitted && confirmEmail.trim() === "";
+
+	const canSubmit = name.trim().length > 0 && isValidEmail(email) && company !== null && emailsMatch && confirmEmail.trim() !== "";
 
 	function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setSubmitted(true);
 		setEmailTouched(true);
+		setConfirmTouched(true);
 		if (!canSubmit || !company) return;
 		setRequester({ name: name.trim(), email: email.trim().toLowerCase(), company });
 	}
@@ -91,6 +101,31 @@ export function RequesterForm() {
 
 								{/* Formato inválido */}
 								{(emailFormatError || (submitted && !isValidEmail(email))) && !domainError && <p className="text-sm text-red-500">Informe um e-mail válido.</p>}
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="req-email-confirm">
+									Confirme seu e-mail <span className="text-red-500">*</span>
+								</Label>
+								<Input
+									id="req-email-confirm"
+									type="email"
+									placeholder="digite o e-mail novamente"
+									value={confirmEmail}
+									onChange={(e) => setConfirmEmail(e.target.value)}
+									onBlur={() => setConfirmTouched(true)}
+									onPaste={(e) => e.preventDefault()}
+									autoComplete="off"
+									className={confirmError || confirmMissing ? "border-red-500 focus-visible:ring-red-500" : confirmEmail !== "" && emailsMatch && isValidEmail(email) ? "border-green-500 focus-visible:ring-green-500" : ""}
+								/>
+								{confirmError && (
+									<div className="flex items-center gap-1.5 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+										<XCircle className="h-4 w-4 shrink-0" />
+										<span>Os e-mails não coincidem. Confira antes de continuar.</span>
+									</div>
+								)}
+								{confirmMissing && <p className="text-sm text-red-500">Confirme seu e-mail.</p>}
+								<p className="text-xs text-muted-foreground">É para este endereço que a assinatura aprovada será enviada. Um endereço errado não tem como ser entregue.</p>
 							</div>
 
 							<Button type="submit" className="w-full bg-[#0b2a5b] text-white hover:bg-[#0b2a5b]/90" size="lg">

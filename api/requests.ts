@@ -2,13 +2,105 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { supabase } from './_lib/supabase.js'
 import { generateToken, hashSignatureItems } from './_lib/crypto.js'
 import { getApproversForDomain } from './_lib/approvers.js'
-import type { SignatureItem, RequestType } from './_lib/types.js'
+import type { SignatureItem, RequestType, RequestRow } from './_lib/types.js'
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
+// ── Rate limit da consulta por e-mail ────────────────────────────────────────
+// Best-effort: o estado vive na memória da instância serverless, então o limite
+// é por instância e some em cold start. Serve para frear varredura ingênua de
+// endereços; não é uma garantia forte.
+const LOOKUP_WINDOW_MS = 60_000
+const LOOKUP_MAX_PER_WINDOW = 10
+const lookupHits = new Map<string, number[]>()
+
+function isLookupRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const recent = (lookupHits.get(ip) ?? []).filter((t) => now - t < LOOKUP_WINDOW_MS)
+  recent.push(now)
+  lookupHits.set(ip, recent)
+
+  // Evita crescimento indefinido do Map em instâncias de vida longa
+  if (lookupHits.size > 5_000) {
+    for (const [key, hits] of lookupHits) {
+      if (hits.every((t) => now - t >= LOOKUP_WINDOW_MS)) lookupHits.delete(key)
+    }
+  }
+
+  return recent.length > LOOKUP_MAX_PER_WINDOW
+}
+
+/**
+ * GET /api/requests?email=<endereço exato>
+ *
+ * Lista as solicitações de um solicitante para a aba "Minhas solicitações".
+ * Exige o endereço completo — não faz busca parcial nem por domínio — e nunca
+ * devolve os dados da assinatura, só o resumo. O conteúdo continua vindo de
+ * GET /api/requests/:id, que só o expõe quando a solicitação está aprovada.
+ */
+async function handleList(req: VercelRequest, res: VercelResponse) {
+  const rawEmail = (req.query.email as string | undefined)?.trim().toLowerCase()
+
+  if (!rawEmail || !isValidEmail(rawEmail)) {
+    return res.status(400).json({ error: 'E-mail inválido.' })
+  }
+
+  const forwarded = req.headers['x-forwarded-for']
+  const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim() ?? 'unknown'
+
+  if (isLookupRateLimited(ip)) {
+    return res.status(429).json({ error: 'Muitas consultas. Aguarde um minuto e tente novamente.' })
+  }
+
+  const { data, error } = await supabase
+    .from('requests')
+    .select('id, type, requester_name, company_domain, signature_items, status, decision_reason, decided_at, created_at')
+    .eq('requester_email', rawEmail)
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  if (error) {
+    console.error('[requests] List error:', error)
+    return res.status(500).json({ error: 'Erro ao buscar solicitações.' })
+  }
+
+  const rows = (data ?? []) as Array<
+    Pick<
+      RequestRow,
+      | 'id'
+      | 'type'
+      | 'requester_name'
+      | 'company_domain'
+      | 'signature_items'
+      | 'status'
+      | 'decision_reason'
+      | 'decided_at'
+      | 'created_at'
+    >
+  >
+
+  return res.status(200).json({
+    requests: rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      requesterName: row.requester_name,
+      companyDomain: row.company_domain,
+      status: row.status,
+      itemCount: Array.isArray(row.signature_items) ? row.signature_items.length : 0,
+      // Só faz sentido para reprovadas; hoje esse motivo só existia no e-mail.
+      decisionReason: row.status === 'rejected' ? row.decision_reason : null,
+      decidedAt: row.decided_at,
+      createdAt: row.created_at,
+    })),
+  })
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'GET') {
+    return handleList(req, res)
+  }
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
