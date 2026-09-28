@@ -44,6 +44,8 @@ export interface MyRequestSummary {
   companyDomain: string | null
   status: RequestStatus
   itemCount: number
+  /** Nome da pessoa da assinatura — só em solicitações individuais. */
+  signatureName: string | null
   decisionReason: string | null
   decidedAt: string | null
   createdAt: string

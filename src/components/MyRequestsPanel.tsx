@@ -121,7 +121,7 @@ export function MyRequestsPanel({ email }: { email: string }) {
 									<div className="flex flex-wrap items-center gap-2">
 										<StatusBadge status={r.status} />
 										<span className="text-sm font-medium">
-											{r.type === "single" ? "Individual" : `Em massa (${r.itemCount} assinaturas)`}
+											{r.type === "single" ? (r.signatureName ?? "Individual") : `Em massa (${r.itemCount} assinaturas)`}
 										</span>
 									</div>
 									<p className="text-xs text-muted-foreground">

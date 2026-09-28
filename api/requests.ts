@@ -89,6 +89,11 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
       companyDomain: row.company_domain,
       status: row.status,
       itemCount: Array.isArray(row.signature_items) ? row.signature_items.length : 0,
+      // Só o nome da pessoa, para identificar a individual na listagem.
+      signatureName:
+        row.type === 'single' && Array.isArray(row.signature_items)
+          ? row.signature_items[0]?.name?.trim() || null
+          : null,
       // Só faz sentido para reprovadas; hoje esse motivo só existia no e-mail.
       decisionReason: row.status === 'rejected' ? row.decision_reason : null,
       decidedAt: row.decided_at,
