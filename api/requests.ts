@@ -75,7 +75,8 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
       .from('requests')
       .select(columns)
       .eq('status', 'approved')
-      .contains('signature_items', [{ email: email }])
+      // Em string: um array aqui viraria literal de array do Postgres, não JSON.
+      .contains('signature_items', JSON.stringify([{ email }]))
       .order('created_at', { ascending: false })
       .limit(LIST_LIMIT),
   ])

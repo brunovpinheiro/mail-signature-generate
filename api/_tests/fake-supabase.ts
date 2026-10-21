@@ -27,6 +27,7 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
   private max: number | null = null
   private mode: 'many' | 'single' = 'many'
   private inserted: Row[] | null = null
+  private failure: { message: string } | null = null
 
   constructor(private readonly table: Row[]) {}
 
@@ -54,8 +55,24 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
     return this
   }
 
+  // Como no supabase-js: string vai como está (JSON para colunas jsonb), objeto
+  // vira JSON, mas array vira literal de array do Postgres (`{a,b}`), que o
+  // PostgREST recusa numa coluna jsonb — como todas as que este falso guarda.
   contains(column: string, value: unknown) {
-    this.filters.push((row) => jsonContains(row[column], value))
+    if (Array.isArray(value)) {
+      this.failure = { message: `invalid input syntax for type json: {${value.join(',')}}` }
+      return this
+    }
+    let parsed: unknown = value
+    if (typeof value === 'string') {
+      try {
+        parsed = JSON.parse(value)
+      } catch {
+        this.failure = { message: `invalid input syntax for type json: ${value}` }
+        return this
+      }
+    }
+    this.filters.push((row) => jsonContains(row[column], parsed))
     return this
   }
 
@@ -75,6 +92,7 @@ class Query implements PromiseLike<{ data: unknown; error: unknown }> {
   }
 
   private run(): { data: unknown; error: unknown } {
+    if (this.failure) return { data: null, error: this.failure }
     let rows = this.inserted ?? this.table.filter((row) => this.filters.every((f) => f(row)))
     if (this.sort) {
       const { column, ascending } = this.sort
