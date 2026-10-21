@@ -53,10 +53,16 @@ export async function listMyRequests(
   return body.requests
 }
 
+/**
+ * Com `email`, quem não é o solicitante recebe só a própria assinatura, como
+ * individual. Sem ele, vem a solicitação inteira (links de e-mail).
+ */
 export async function getDownloadRequest(
-  requestId: string
+  requestId: string,
+  email?: string
 ): Promise<DownloadRequestData> {
-  return apiFetch<DownloadRequestData>(`/api/requests/${requestId}`)
+  const query = email ? `?email=${encodeURIComponent(email)}` : ''
+  return apiFetch<DownloadRequestData>(`/api/requests/${requestId}${query}`)
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────

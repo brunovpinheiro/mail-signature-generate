@@ -13,6 +13,8 @@ interface UseSignatureEditorOptions {
 interface UseSignatureEditorReturn {
 	signatureData: SignatureData;
 	setSignatureData: (data: Partial<SignatureData>) => void;
+	/** Substitui todo o conteúdo do editor — ex.: ao gerar uma nova a partir de uma assinatura existente. */
+	loadSignatureData: (data: SignatureData) => void;
 	generatedHtml: string;
 	isValid: boolean;
 }
@@ -40,6 +42,12 @@ export function useSignatureEditor(options: UseSignatureEditorOptions = {}): Use
 		setSignatureDataState((prev) => ({ ...prev, ...data }));
 	};
 
+	// Itens de planilha costumam vir sem website; o padrão da empresa entra no lugar
+	// (e acompanha a troca de empresa, pelo efeito acima).
+	const loadSignatureData = (data: SignatureData) => {
+		setSignatureDataState({ ...data, website: data.website || defaultWebsite });
+	};
+
 	const isValid = useMemo(() => {
 		return signatureData.name.trim().length > 0 && signatureData.jobTitle.trim().length > 0;
 	}, [signatureData]);
@@ -58,6 +66,7 @@ export function useSignatureEditor(options: UseSignatureEditorOptions = {}): Use
 	return {
 		signatureData,
 		setSignatureData,
+		loadSignatureData,
 		generatedHtml,
 		isValid,
 	};

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { supabase } from '../_lib/supabase.js'
 import { extractAdminToken } from '../_lib/admin-auth.js'
 import { hashSignatureItems } from '../_lib/crypto.js'
+import { normalizeSignatureItems } from '../_lib/signature-items.js'
 import { sendRequesterApprovedEmail } from '../_lib/email.js'
 import { getCompanyNameByDomain } from '../_lib/company-domains.js'
 import type { SignatureItem } from '../_lib/types.js'
@@ -36,7 +37,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const domain = companyDomain ?? adminPayload.domain
     const companyName = getCompanyNameByDomain(domain)
     const now = new Date().toISOString()
-    const dataHash = hashSignatureItems(signatureItems)
+    const items = normalizeSignatureItems(signatureItems)
+    const dataHash = hashSignatureItems(items)
 
     const { data: requestRow, error: insertError } = await supabase
       .from('requests')
@@ -45,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         requester_email: adminPayload.email,
         company_domain: domain,
         type: 'bulk',
-        signature_items: signatureItems,
+        signature_items: items,
         data_hash: dataHash,
         status: 'approved',
         decision_by: adminPayload.email,

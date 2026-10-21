@@ -56,3 +56,4 @@ CREATE INDEX idx_audit_logs_request_id      ON audit_logs(request_id);
 CREATE INDEX idx_requests_requester_email   ON requests(requester_email);
 CREATE INDEX idx_requests_status            ON requests(status);
 CREATE INDEX idx_requests_company_domain    ON requests(company_domain);
+CREATE INDEX idx_requests_signature_items   ON requests USING GIN (signature_items jsonb_path_ops);

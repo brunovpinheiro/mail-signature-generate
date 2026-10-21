@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { supabase } from './_lib/supabase.js'
 import { generateToken, hashSignatureItems } from './_lib/crypto.js'
 import { getApproversForDomain } from './_lib/approvers.js'
+import { itemsForEmail, normalizeEmail, normalizeSignatureItems } from './_lib/signature-items.js'
 import type { SignatureItem, RequestType, RequestRow } from './_lib/types.js'
 
 function isValidEmail(email: string): boolean {
@@ -32,18 +33,21 @@ function isLookupRateLimited(ip: string): boolean {
   return recent.length > LOOKUP_MAX_PER_WINDOW
 }
 
+const LIST_LIMIT = 100
+
 /**
  * GET /api/requests?email=<endereço exato>
  *
- * Lista as solicitações de um solicitante para a aba "Minhas solicitações".
- * Exige o endereço completo — não faz busca parcial nem por domínio — e nunca
- * devolve os dados da assinatura, só o resumo. O conteúdo continua vindo de
+ * Lista, para a aba "Minhas solicitações", as solicitações enviadas pelo e-mail
+ * e as aprovadas em que outra pessoa gerou uma assinatura para ele. Exige o
+ * endereço completo — não faz busca parcial nem por domínio — e nunca devolve
+ * os dados da assinatura, só o resumo. O conteúdo continua vindo de
  * GET /api/requests/:id, que só o expõe quando a solicitação está aprovada.
  */
 async function handleList(req: VercelRequest, res: VercelResponse) {
-  const rawEmail = (req.query.email as string | undefined)?.trim().toLowerCase()
+  const email = typeof req.query.email === 'string' ? normalizeEmail(req.query.email) : undefined
 
-  if (!rawEmail || !isValidEmail(rawEmail)) {
+  if (!email || !isValidEmail(email)) {
     return res.status(400).json({ error: 'E-mail inválido.' })
   }
 
@@ -54,40 +58,67 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'Muitas consultas. Aguarde um minuto e tente novamente.' })
   }
 
-  const { data, error } = await supabase
-    .from('requests')
-    .select('id, type, requester_name, company_domain, signature_items, status, decision_reason, decided_at, created_at')
-    .eq('requester_email', rawEmail)
-    .order('created_at', { ascending: false })
-    .limit(100)
+  const columns =
+    'id, type, requester_name, requester_email, company_domain, signature_items, status, decision_reason, decided_at, created_at'
 
+  // Duas origens: o que o e-mail enviou (qualquer status) e as assinaturas
+  // aprovadas que outra pessoa gerou para ele. A contenção JSONB depende de os
+  // e-mails dos itens estarem gravados normalizados.
+  const [requested, generatedFor] = await Promise.all([
+    supabase
+      .from('requests')
+      .select(columns)
+      .eq('requester_email', email)
+      .order('created_at', { ascending: false })
+      .limit(LIST_LIMIT),
+    supabase
+      .from('requests')
+      .select(columns)
+      .eq('status', 'approved')
+      .contains('signature_items', [{ email: email }])
+      .order('created_at', { ascending: false })
+      .limit(LIST_LIMIT),
+  ])
+
+  const error = requested.error ?? generatedFor.error
   if (error) {
     console.error('[requests] List error:', error)
     return res.status(500).json({ error: 'Erro ao buscar solicitações.' })
   }
 
-  const rows = (data ?? []) as Array<
-    Pick<
-      RequestRow,
-      | 'id'
-      | 'type'
-      | 'requester_name'
-      | 'company_domain'
-      | 'signature_items'
-      | 'status'
-      | 'decision_reason'
-      | 'decided_at'
-      | 'created_at'
-    >
+  type ListRow = Pick<
+    RequestRow,
+    | 'id'
+    | 'type'
+    | 'requester_name'
+    | 'requester_email'
+    | 'company_domain'
+    | 'signature_items'
+    | 'status'
+    | 'decision_reason'
+    | 'decided_at'
+    | 'created_at'
   >
 
-  return res.status(200).json({
-    requests: rows.map((row) => ({
-      id: row.id,
-      type: row.type,
-      requesterName: row.requester_name,
-      companyDomain: row.company_domain,
-      status: row.status,
+  const requestedRows = (requested.data ?? []) as ListRow[]
+  const requestedIds = new Set(requestedRows.map((row) => row.id))
+  // Quem enviou e também está nos itens vê a solicitação uma vez só, como enviada.
+  const generatedRows = ((generatedFor.data ?? []) as ListRow[]).filter((row) => !requestedIds.has(row.id))
+
+  const baseSummary = (row: ListRow) => ({
+    id: row.id,
+    type: row.type,
+    requesterName: row.requester_name,
+    companyDomain: row.company_domain,
+    status: row.status,
+    decidedAt: row.decided_at,
+    createdAt: row.created_at,
+  })
+
+  const summaries = [
+    ...requestedRows.map((row) => ({
+      ...baseSummary(row),
+      relation: 'requested' as const,
       itemCount: Array.isArray(row.signature_items) ? row.signature_items.length : 0,
       // Só o nome da pessoa, para identificar a individual na listagem.
       signatureName:
@@ -96,10 +127,20 @@ async function handleList(req: VercelRequest, res: VercelResponse) {
           : null,
       // Só faz sentido para reprovadas; hoje esse motivo só existia no e-mail.
       decisionReason: row.status === 'rejected' ? row.decision_reason : null,
-      decidedAt: row.decided_at,
-      createdAt: row.created_at,
     })),
-  })
+    ...generatedRows.map((row) => ({
+      ...baseSummary(row),
+      relation: 'generated_for' as const,
+      // Não revela o tamanho do lote: a pessoa só pode baixar a própria assinatura.
+      itemCount: 1,
+      signatureName: itemsForEmail(row.signature_items, email)[0]?.name?.trim() || null,
+      decisionReason: null,
+    })),
+  ]
+
+  summaries.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+
+  return res.status(200).json({ requests: summaries.slice(0, LIST_LIMIT) })
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -148,7 +189,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Domínio de e-mail não habilitado para gerar assinaturas.' })
     }
 
-    const dataHash = hashSignatureItems(signatureItems)
+    const items = normalizeSignatureItems(signatureItems)
+    const dataHash = hashSignatureItems(items)
     const now = new Date().toISOString()
 
     // ── Criar solicitação ────────────────────────────────────────────────────
@@ -159,7 +201,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         requester_email: normalizedEmail,
         company_domain: resolvedDomain,
         type,
-        signature_items: signatureItems,
+        signature_items: items,
         data_hash: dataHash,
         status: 'awaiting_approval',
         created_at: now,

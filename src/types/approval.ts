@@ -36,15 +36,23 @@ export interface ApprovalAlreadyDecided {
 
 export type ApprovalTokenResponse = ApprovalTokenView | ApprovalAlreadyDecided
 
+/**
+ * Relação da solicitação com o e-mail consultado: enviada por ele, ou aprovada
+ * com uma assinatura que outra pessoa gerou para ele.
+ */
+export type MyRequestRelation = 'requested' | 'generated_for'
+
 /** Resumo de uma solicitação na aba "Minhas solicitações" — sem os dados da assinatura. */
 export interface MyRequestSummary {
   id: string
+  relation: MyRequestRelation
   type: RequestType
   requesterName: string
   companyDomain: string | null
   status: RequestStatus
+  /** Em `generated_for`, sempre 1: só a assinatura da pessoa pode ser baixada. */
   itemCount: number
-  /** Nome da pessoa da assinatura — só em solicitações individuais. */
+  /** Nome da pessoa da assinatura — em individuais e em `generated_for`. */
   signatureName: string | null
   decisionReason: string | null
   decidedAt: string | null

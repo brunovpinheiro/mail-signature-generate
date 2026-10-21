@@ -12,12 +12,13 @@ import { AdminLogin } from "@/components/AdminLogin";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { AdminRequestDetail } from "@/components/AdminRequestDetail";
 import { DevPreview } from "@/components/DevPreview";
-import { MyRequestsPanel } from "@/components/MyRequestsPanel";
+import { MyRequestsPanel, type SignatureSource } from "@/components/MyRequestsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RequesterProvider, useRequester } from "@/context/RequesterContext";
 import { useSignatureEditor } from "@/hooks/useSignatureEditor";
 import { useExport } from "@/hooks/useExport";
 import { submitRequest } from "@/lib/api";
+import { getCompanyByDomain } from "@/lib/company-domains";
 import { Toaster, toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
 // ── Tela de confirmação pós-envio ─────────────────────────────────────────────
@@ -50,7 +51,7 @@ function SubmittedState({ onReset }: { onReset: () => void }) {
 function MainApp() {
 	const { requester } = useRequester();
 	const [selectedCompany, setSelectedCompany] = useState(requester?.company);
-	const { signatureData, setSignatureData, generatedHtml, isValid } = useSignatureEditor({
+	const { signatureData, setSignatureData, loadSignatureData, generatedHtml, isValid } = useSignatureEditor({
 		templateId: selectedCompany?.templateId,
 		logoUrl: selectedCompany?.logoUrl,
 		defaultWebsite: selectedCompany?.defaultWebsite,
@@ -60,6 +61,7 @@ function MainApp() {
 	const { exportConfig, setExportConfig } = useExport();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
+	const [activeTab, setActiveTab] = useState("create");
 
 	if (!requester) return <RequesterForm />;
 	if (submitted) return <SubmittedState onReset={() => setSubmitted(false)} />;
@@ -83,6 +85,20 @@ function MainApp() {
 		}
 	};
 
+	// Abre o editor preenchido com uma assinatura existente. O envio segue o fluxo
+	// individual normal e vai para aprovação dos gestores, mesmo vindo de um lote.
+	const handleGenerateFrom = ({ signature, companyDomain }: SignatureSource) => {
+		const company = getCompanyByDomain(companyDomain);
+		if (company) setSelectedCompany(company);
+		loadSignatureData(signature);
+		setActiveTab("create");
+		if (company) {
+			toast.info("Editor preenchido com a assinatura atual. Ajuste o que mudou e envie para aprovação.");
+		} else {
+			toast.warning("Editor preenchido, mas o empreendimento desta assinatura não está mais disponível. Selecione o empreendimento antes de enviar.");
+		}
+	};
+
 	return (
 		<div className="min-h-screen bg-background">
 			<header className="border-b bg-[#0b2a5b] text-white">
@@ -93,7 +109,7 @@ function MainApp() {
 			</header>
 
 			<main className="container mx-auto px-4 py-6">
-				<Tabs defaultValue="create">
+				<Tabs value={activeTab} onValueChange={setActiveTab}>
 					<TabsList className="mb-6">
 						<TabsTrigger value="create">Criar assinatura</TabsTrigger>
 						<TabsTrigger value="mine">Minhas solicitações</TabsTrigger>
@@ -112,7 +128,7 @@ function MainApp() {
 					</TabsContent>
 
 					<TabsContent value="mine">
-						<MyRequestsPanel email={requester.email} />
+						<MyRequestsPanel email={requester.email} onGenerateFrom={handleGenerateFrom} />
 					</TabsContent>
 				</Tabs>
 			</main>

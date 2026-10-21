@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Download, AlertCircle, Clock, CheckCircle2, XCircle, Inbox, RefreshCw } from "lucide-react";
+import { Loader2, Download, AlertCircle, Clock, CheckCircle2, XCircle, Inbox, RefreshCw, PencilLine } from "lucide-react";
 import { listMyRequests, getDownloadRequest } from "@/lib/api";
 import { downloadSignatureRequest } from "@/lib/signature-download";
 import { toast } from "sonner";
 import type { MyRequestSummary, RequestStatus } from "@/types/approval";
+import type { SignatureData } from "@/types/signature";
 
 function formatDate(iso: string): string {
 	return new Date(iso).toLocaleString("pt-BR", {
@@ -34,11 +35,27 @@ function StatusBadge({ status }: { status: RequestStatus }) {
 	);
 }
 
-export function MyRequestsPanel({ email }: { email: string }) {
+/** Assinatura existente da qual a pessoa quer gerar uma nova no editor. */
+export interface SignatureSource {
+	signature: SignatureData;
+	companyDomain: string;
+}
+
+/** Individuais aprovadas e as geradas para a pessoa podem virar ponto de partida de uma nova. */
+function canGenerateFrom(r: MyRequestSummary): boolean {
+	return r.status === "approved" && (r.relation === "generated_for" || r.type === "single");
+}
+
+interface MyRequestsPanelProps {
+	email: string;
+	onGenerateFrom: (source: SignatureSource) => void;
+}
+
+export function MyRequestsPanel({ email, onGenerateFrom }: MyRequestsPanelProps) {
 	const [requests, setRequests] = useState<MyRequestSummary[] | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [downloadingId, setDownloadingId] = useState<string | null>(null);
+	const [busy, setBusy] = useState<{ id: string; action: "download" | "generate" } | null>(null);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -56,23 +73,47 @@ export function MyRequestsPanel({ email }: { email: string }) {
 		void load();
 	}, [load]);
 
-	// Busca os dados da assinatura sob demanda — a listagem não os carrega.
-	const handleDownload = useCallback(async (id: string) => {
-		setDownloadingId(id);
-		try {
-			const data = await getDownloadRequest(id);
-			if (!data.signatureItems?.length) {
-				toast.error("Esta solicitação não está disponível para download.");
-				return;
+	// Busca os dados da assinatura sob demanda — a listagem não os carrega. Com o
+	// e-mail da sessão, quem só está num lote recebe apenas a própria assinatura.
+	const handleDownload = useCallback(
+		async (id: string) => {
+			setBusy({ id, action: "download" });
+			try {
+				const data = await getDownloadRequest(id, email);
+				if (!data.signatureItems?.length) {
+					toast.error("Esta solicitação não está disponível para download.");
+					return;
+				}
+				await downloadSignatureRequest(data);
+				toast.success(data.type === "bulk" ? "Download do ZIP iniciado!" : "Download iniciado!");
+			} catch (err) {
+				toast.error((err as Error).message ?? "Erro ao gerar a assinatura.");
+			} finally {
+				setBusy(null);
 			}
-			await downloadSignatureRequest(data);
-			toast.success(data.type === "bulk" ? "Download do ZIP iniciado!" : "Download iniciado!");
-		} catch (err) {
-			toast.error((err as Error).message ?? "Erro ao gerar a assinatura.");
-		} finally {
-			setDownloadingId(null);
-		}
-	}, []);
+		},
+		[email],
+	);
+
+	const handleGenerateFrom = useCallback(
+		async (id: string) => {
+			setBusy({ id, action: "generate" });
+			try {
+				const data = await getDownloadRequest(id, email);
+				const signature = data.signatureItems?.[0];
+				if (!signature) {
+					toast.error("Esta assinatura não está disponível.");
+					return;
+				}
+				onGenerateFrom({ signature, companyDomain: data.companyDomain });
+			} catch (err) {
+				toast.error((err as Error).message ?? "Erro ao carregar a assinatura.");
+			} finally {
+				setBusy(null);
+			}
+		},
+		[email, onGenerateFrom],
+	);
 
 	return (
 		<Card>
@@ -80,7 +121,7 @@ export function MyRequestsPanel({ email }: { email: string }) {
 				<div className="space-y-1">
 					<CardTitle className="text-lg text-[#0b2a5b]">Minhas solicitações</CardTitle>
 					<p className="text-sm text-muted-foreground">
-						Solicitações enviadas por <strong>{email}</strong>. As aprovadas podem ser baixadas aqui a qualquer momento.
+						Solicitações enviadas por <strong>{email}</strong> e assinaturas aprovadas geradas para este e-mail por outras pessoas. As aprovadas podem ser baixadas aqui a qualquer momento.
 					</p>
 				</div>
 				<Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
@@ -121,13 +162,24 @@ export function MyRequestsPanel({ email }: { email: string }) {
 									<div className="flex flex-wrap items-center gap-2">
 										<StatusBadge status={r.status} />
 										<span className="text-sm font-medium">
-											{r.type === "single" ? (r.signatureName ?? "Individual") : `Em massa (${r.itemCount} assinaturas)`}
+											{r.relation === "generated_for"
+												? (r.signatureName ?? "Sua assinatura")
+												: r.type === "single"
+													? (r.signatureName ?? "Individual")
+													: `Em massa (${r.itemCount} assinaturas)`}
 										</span>
 									</div>
-									<p className="text-xs text-muted-foreground">
-										Enviada em {formatDate(r.createdAt)}
-										{r.decidedAt && ` · decidida em ${formatDate(r.decidedAt)}`}
-									</p>
+									{r.relation === "generated_for" ? (
+										<p className="text-xs text-muted-foreground">
+											Gerada por {r.requesterName} em {formatDate(r.createdAt)}
+											{r.decidedAt && ` · aprovada em ${formatDate(r.decidedAt)}`}
+										</p>
+									) : (
+										<p className="text-xs text-muted-foreground">
+											Enviada em {formatDate(r.createdAt)}
+											{r.decidedAt && ` · decidida em ${formatDate(r.decidedAt)}`}
+										</p>
+									)}
 									{r.decisionReason && (
 										<p className="rounded border-l-2 border-red-400 bg-red-50 px-2 py-1.5 text-xs text-red-900">
 											<span className="font-medium">Motivo:</span> {r.decisionReason}
@@ -136,22 +188,37 @@ export function MyRequestsPanel({ email }: { email: string }) {
 								</div>
 
 								{r.status === "approved" && (
-									<Button
-										onClick={() => void handleDownload(r.id)}
-										disabled={downloadingId !== null}
-										className="shrink-0 bg-[#0b2a5b] text-white hover:bg-[#0b2a5b]/90"
-										size="sm"
-									>
-										{downloadingId === r.id ? (
-											<>
-												<Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…
-											</>
-										) : (
-											<>
-												<Download className="mr-2 h-4 w-4" /> {r.type === "bulk" ? "Baixar ZIP" : "Baixar"}
-											</>
+									<div className="flex shrink-0 flex-wrap gap-2">
+										{canGenerateFrom(r) && (
+											<Button onClick={() => void handleGenerateFrom(r.id)} disabled={busy !== null} variant="outline" size="sm">
+												{busy?.id === r.id && busy.action === "generate" ? (
+													<>
+														<Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando…
+													</>
+												) : (
+													<>
+														<PencilLine className="mr-2 h-4 w-4" /> Gerar nova a partir desta
+													</>
+												)}
+											</Button>
 										)}
-									</Button>
+										<Button
+											onClick={() => void handleDownload(r.id)}
+											disabled={busy !== null}
+											className="bg-[#0b2a5b] text-white hover:bg-[#0b2a5b]/90"
+											size="sm"
+										>
+											{busy?.id === r.id && busy.action === "download" ? (
+												<>
+													<Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…
+												</>
+											) : (
+												<>
+													<Download className="mr-2 h-4 w-4" /> {r.relation === "requested" && r.type === "bulk" ? "Baixar ZIP" : "Baixar"}
+												</>
+											)}
+										</Button>
+									</div>
 								)}
 							</li>
 						))}
